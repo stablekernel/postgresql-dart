@@ -97,7 +97,7 @@ class _AuthMD5Message extends _ClientMessage {
   String hashedAuthString;
 
   int get length {
-    return 6 + hashedAuthString.length;
+    return 6 + UTF8.encode(hashedAuthString).length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -115,7 +115,7 @@ class _QueryMessage extends _ClientMessage {
   String queryString;
 
   int get length {
-    return 6 + queryString.length;
+    return 6 + UTF8.encode(queryString).length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -134,7 +134,7 @@ class _ParseMessage extends _ClientMessage {
   String statement;
 
   int get length {
-    return 9 + statement.length + statementName.length;
+    return 9 + UTF8.encode(statement).length + UTF8.encode(statementName).length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -154,7 +154,7 @@ class _DescribeMessage extends _ClientMessage {
   String statementName = "";
 
   int get length {
-    return 7 + statementName.length;
+    return 7 + UTF8.encode(statementName).length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
