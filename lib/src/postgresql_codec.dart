@@ -130,7 +130,7 @@ abstract class PostgreSQLCodec {
       }
 
       String val = value;
-      outBuffer = new Uint8List.fromList(UTF8.encode(val));
+      outBuffer = UTF8.encode(val);
     } else if (postgresType == TypeFloat4) {
       if (value is! double) {
         throw new FormatException("Invalid type for parameter value. Expected: double Got: ${value.runtimeType}");
