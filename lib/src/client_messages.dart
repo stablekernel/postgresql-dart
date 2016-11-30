@@ -89,9 +89,9 @@ class _StartupMessage extends _ClientMessage {
 
 class _AuthMD5Message extends _ClientMessage {
   _AuthMD5Message(String username, String password, List<int> saltBytes) {
-    var passwordHash = md5.convert(UTF8.encode("${password}${username}")).toString();
-    var saltString = UTF8.decode(saltBytes);
-    hashedAuthString = "md5" + md5.convert(UTF8.encode("$passwordHash$saltString")).toString();
+    var passwordHash = md5.convert("${password}${username}".codeUnits).toString();
+    var saltString = new String.fromCharCodes(saltBytes);
+    hashedAuthString = "md5" + md5.convert("$passwordHash$saltString".codeUnits).toString();
   }
 
   String hashedAuthString;
