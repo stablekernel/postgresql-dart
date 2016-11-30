@@ -11,10 +11,26 @@ void main() {
       await connection.execute("CREATE TEMPORARY TABLE t (i int, s serial, bi bigint, bs bigserial, bl boolean, si smallint, t text, f real, d double precision, dt date, ts timestamp, tsz timestamptz)");
       await connection.execute("CREATE TEMPORARY TABLE u (i1 int not null, i2 int not null);");
       await connection.execute("CREATE TEMPORARY TABLE n (i1 int, i2 int not null);");
+      await connection.execute("CREATE TEMPORARY TABLE s (t text);");
     });
 
     tearDown(() async {
       await connection.close();
+    });
+
+    test("UTF8 strings", () async {
+      var result = await connection.query("INSERT INTO t (t) values "
+          "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})"
+          "returning t",
+          substitutionValues: {
+            "t" : "°∆",
+          });
+
+      var expectedRow = ["°∆"];
+      expect(result, [expectedRow]);
+
+      result = await connection.query("select t from t");
+      expect(result, [expectedRow]);
     });
 
     test("Query without specifying types", () async {
