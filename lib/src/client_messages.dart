@@ -16,14 +16,23 @@ abstract class _ClientMessage {
 
   int get length;
 
-  int applyStringToBuffer(String string, ByteData buffer, int offset) {
-    var postStringOffset = UTF8.encode(string).fold(offset, (idx, unit) {
+  int applyStringToBuffer(UTF8BackedString string, ByteData buffer, int offset) {
+    var postStringOffset = string.utf8Bytes.fold(offset, (idx, unit) {
       buffer.setInt8(idx, unit);
       return idx + 1;
     });
 
     buffer.setInt8(postStringOffset, 0);
     return postStringOffset + 1;
+  }
+
+  int applyBytesToBuffer(List<int> bytes, ByteData buffer, int offset) {
+    var postStringOffset = bytes.fold(offset, (idx, unit) {
+      buffer.setInt8(idx, unit);
+      return idx + 1;
+    });
+
+    return postStringOffset;
   }
 
   int applyToBuffer(ByteData aggregateBuffer, int offsetIntoAggregateBuffer);
@@ -46,19 +55,25 @@ abstract class _ClientMessage {
 }
 
 class _StartupMessage extends _ClientMessage {
-  _StartupMessage(this.databaseName, this.timeZone, {this.username});
+  _StartupMessage(String databaseName, String timeZone, {String username}) {
+    this.databaseName = new UTF8BackedString(databaseName);
+    this.timeZone = new UTF8BackedString(timeZone);
+    if (username != null) {
+      this.username = new UTF8BackedString(username);
+    }
+  }
 
-  String username = null;
-  String databaseName;
-  String timeZone;
+  UTF8BackedString username = null;
+  UTF8BackedString databaseName;
+  UTF8BackedString timeZone;
 
   ByteData buffer;
 
   int get length {
     var fixedLength = 53;
-    var variableLength = (username?.length ?? 0)
-        + databaseName.length
-        + timeZone.length + 3;
+    var variableLength = (username?.utf8Length ?? 0)
+        + databaseName.utf8Length
+        + timeZone.utf8Length + 3;
 
     return fixedLength + variableLength;
   }
@@ -68,17 +83,17 @@ class _StartupMessage extends _ClientMessage {
     buffer.setInt32(offset, _ClientMessage.ProtocolVersion); offset += 4;
 
     if (username != null) {
-      offset = applyStringToBuffer("user", buffer, offset);
+      offset = applyBytesToBuffer(([117, 115, 101, 114, 0]), buffer, offset); //user
       offset = applyStringToBuffer(username, buffer, offset);
     }
 
-    offset = applyStringToBuffer("database", buffer, offset);
+    offset = applyBytesToBuffer([100, 97, 116, 97, 98, 97, 115, 101, 0], buffer, offset); //database
     offset = applyStringToBuffer(databaseName, buffer, offset);
 
-    offset = applyStringToBuffer("client_encoding", buffer, offset);
-    offset = applyStringToBuffer("UTF8", buffer, offset);
+    offset = applyBytesToBuffer([99, 108, 105, 101, 110, 116, 95, 101, 110, 99, 111, 100, 105, 110, 103, 0], buffer, offset); //client_encoding
+    offset = applyBytesToBuffer([85, 84, 70, 56, 0], buffer, offset); //UTF8
 
-    offset = applyStringToBuffer("TimeZone", buffer, offset);
+    offset = applyBytesToBuffer([84, 105, 109, 101, 90, 111, 110, 101, 0], buffer, offset); //TimeZone
     offset = applyStringToBuffer(timeZone, buffer, offset);
 
     buffer.setInt8(offset, 0); offset += 1;
@@ -91,13 +106,13 @@ class _AuthMD5Message extends _ClientMessage {
   _AuthMD5Message(String username, String password, List<int> saltBytes) {
     var passwordHash = md5.convert("${password}${username}".codeUnits).toString();
     var saltString = new String.fromCharCodes(saltBytes);
-    hashedAuthString = "md5" + md5.convert("$passwordHash$saltString".codeUnits).toString();
+    hashedAuthString = new UTF8BackedString("md5" + md5.convert("$passwordHash$saltString".codeUnits).toString());
   }
 
-  String hashedAuthString;
+  UTF8BackedString hashedAuthString;
 
   int get length {
-    return 6 + UTF8.encode(hashedAuthString).length;
+    return 6 + hashedAuthString.utf8Length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -110,12 +125,14 @@ class _AuthMD5Message extends _ClientMessage {
 }
 
 class _QueryMessage extends _ClientMessage {
-  _QueryMessage(this.queryString);
+  _QueryMessage(String queryString) {
+    this.queryString = new UTF8BackedString(queryString);
+  }
 
-  String queryString;
+  UTF8BackedString queryString;
 
   int get length {
-    return 6 + UTF8.encode(queryString).length;
+    return 6 + queryString.utf8Length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -128,13 +145,16 @@ class _QueryMessage extends _ClientMessage {
 }
 
 class _ParseMessage extends _ClientMessage {
-  _ParseMessage (this.statement, {this.statementName: ""});
+  _ParseMessage (String statement, {String statementName: ""}) {
+    this.statement = new UTF8BackedString(statement);
+    this.statementName = new UTF8BackedString(statementName);
+  }
 
-  String statementName = "";
-  String statement;
+  UTF8BackedString statementName;
+  UTF8BackedString statement;
 
   int get length {
-    return 9 + UTF8.encode(statement).length + UTF8.encode(statementName).length;
+    return 9 + statement.utf8Length + statementName.utf8Length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -149,12 +169,14 @@ class _ParseMessage extends _ClientMessage {
 }
 
 class _DescribeMessage extends _ClientMessage {
-  _DescribeMessage({this.statementName: ""});
+  _DescribeMessage({String statementName: ""}) {
+    this.statementName = new UTF8BackedString(statementName);
+  }
 
-  String statementName = "";
+  UTF8BackedString statementName;
 
   int get length {
-    return 7 + UTF8.encode(statementName).length;
+    return 7 + statementName.utf8Length;
   }
 
   int applyToBuffer(ByteData buffer, int offset) {
@@ -168,12 +190,13 @@ class _DescribeMessage extends _ClientMessage {
 }
 
 class _BindMessage extends _ClientMessage {
-  _BindMessage(this.parameters, {this.statementName: ""}) {
+  _BindMessage(this.parameters, {String statementName: ""}) {
     typeSpecCount = parameters.where((p) => p.isBinary).length;
+    this.statementName = new UTF8BackedString(statementName);
   }
 
   List<_ParameterValue> parameters;
-  String statementName;
+  UTF8BackedString statementName;
 
   int typeSpecCount;
   int _cachedLength;
@@ -185,7 +208,7 @@ class _BindMessage extends _ClientMessage {
       }
 
       _cachedLength = 15;
-      _cachedLength += statementName.length;
+      _cachedLength += statementName.utf8Length;
       _cachedLength += inputParameterElementCount * 2;
       _cachedLength += parameters.fold(0, (len, _ParameterValue paramValue) {
         if (paramValue.bytes == null) {
@@ -202,7 +225,7 @@ class _BindMessage extends _ClientMessage {
     buffer.setUint8(offset, _ClientMessage.BindIdentifier); offset += 1;
     buffer.setUint32(offset, length - 1); offset += 4;
 
-    offset = applyStringToBuffer("", buffer, offset); // Name of portal - currently unnamed portal.
+    offset = applyBytesToBuffer([0], buffer, offset); // Name of portal - currently unnamed portal.
     offset = applyStringToBuffer(statementName, buffer, offset); // Name of prepared statement.
 
     // OK, if we have no specified types at all, we can use 0. If we have all specified types, we can use 1. If we have a mix, we have to individually
@@ -253,7 +276,7 @@ class _ExecuteMessage extends _ClientMessage {
   int applyToBuffer(ByteData buffer, int offset) {
     buffer.setUint8(offset, _ClientMessage.ExecuteIdentifier); offset += 1;
     buffer.setUint32(offset, length - 1); offset += 4;
-    offset = applyStringToBuffer("", buffer, offset); // Portal name
+    offset = applyBytesToBuffer([0], buffer, offset); // Portal name
     buffer.setUint32(offset, 0); offset += 4; // Row limit
 
     return offset;
@@ -270,7 +293,29 @@ class _SyncMessage extends _ClientMessage {
   int applyToBuffer(ByteData buffer, int offset) {
     buffer.setUint8(offset, _ClientMessage.SyncIdentifier); offset += 1;
     buffer.setUint32(offset, 4); offset += 4;
-
     return offset;
+  }
+}
+
+class UTF8BackedString {
+
+  UTF8BackedString(this.string);
+
+  List<int> _cachedUTF8Bytes;
+
+  final String string;
+
+  int get utf8Length {
+    if (_cachedUTF8Bytes == null) {
+      _cachedUTF8Bytes = UTF8.encode(string);
+    }
+    return _cachedUTF8Bytes.length;
+  }
+
+  List<int> get utf8Bytes {
+    if (_cachedUTF8Bytes == null) {
+      _cachedUTF8Bytes = UTF8.encode(string);
+    }
+    return _cachedUTF8Bytes;
   }
 }
