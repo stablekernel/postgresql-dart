@@ -67,6 +67,12 @@ class _StartupMessage extends _ClientMessage {
   UTF8BackedString databaseName;
   UTF8BackedString timeZone;
 
+  static const user = const [117, 115, 101, 114, 0];
+  static const database = const [100, 97, 116, 97, 98, 97, 115, 101, 0];
+  static const clientEncoding = const [99, 108, 105, 101, 110, 116, 95, 101, 110, 99, 111, 100, 105, 110, 103, 0];
+  static const utf8 = const [85, 84, 70, 56, 0];
+  static const timezone = const [84, 105, 109, 101, 90, 111, 110, 101, 0];
+
   ByteData buffer;
 
   int get length {
@@ -83,17 +89,17 @@ class _StartupMessage extends _ClientMessage {
     buffer.setInt32(offset, _ClientMessage.ProtocolVersion); offset += 4;
 
     if (username != null) {
-      offset = applyBytesToBuffer(([117, 115, 101, 114, 0]), buffer, offset); //user
+      offset = applyBytesToBuffer((user), buffer, offset);
       offset = applyStringToBuffer(username, buffer, offset);
     }
 
-    offset = applyBytesToBuffer([100, 97, 116, 97, 98, 97, 115, 101, 0], buffer, offset); //database
+    offset = applyBytesToBuffer(database, buffer, offset);
     offset = applyStringToBuffer(databaseName, buffer, offset);
 
-    offset = applyBytesToBuffer([99, 108, 105, 101, 110, 116, 95, 101, 110, 99, 111, 100, 105, 110, 103, 0], buffer, offset); //client_encoding
-    offset = applyBytesToBuffer([85, 84, 70, 56, 0], buffer, offset); //UTF8
+    offset = applyBytesToBuffer(clientEncoding, buffer, offset);
+    offset = applyBytesToBuffer(utf8, buffer, offset);
 
-    offset = applyBytesToBuffer([84, 105, 109, 101, 90, 111, 110, 101, 0], buffer, offset); //TimeZone
+    offset = applyBytesToBuffer(timezone, buffer, offset);
     offset = applyStringToBuffer(timeZone, buffer, offset);
 
     buffer.setInt8(offset, 0); offset += 1;
