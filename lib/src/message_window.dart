@@ -48,8 +48,8 @@ class _MessageFrame {
 
     var bufReader = new ByteData.view(headerBuffer.buffer);
     type = bufReader.getUint8(0);
-    expectedLength = bufReader.getUint32(1) -
-        4; // Remove this length from the length needed to complete this message
+    // Remove this length from the length needed to complete this message
+    expectedLength = bufReader.getUint32(1) - 4;
 
     var offsetIntoIncomingBytes = countNeededFromIncomingToDetermineMessage;
     var byteBufferLengthRemaining = bytes.length - offsetIntoIncomingBytes;

@@ -176,12 +176,12 @@ class _ParseMessage extends _ClientMessage {
     offset += 1;
     buffer.setUint32(offset, length - 1);
     offset += 4;
-    offset = applyStringToBuffer(
-        statementName, buffer, offset); // Name of prepared statement
+    // Name of prepared statement
+    offset = applyStringToBuffer(statementName, buffer, offset);
     offset = applyStringToBuffer(statement, buffer, offset); // Query string
     buffer.setUint16(offset, 0);
-    offset +=
-        2; // Specifying types - may add this in the future, for now indicating we want the backend to infer.
+    // Specifying types - may add this in the future, for now indicating we want the backend to infer.
+    offset += 2;
 
     return offset;
   }
@@ -251,23 +251,23 @@ class _BindMessage extends _ClientMessage {
     buffer.setUint32(offset, length - 1);
     offset += 4;
 
-    offset = applyBytesToBuffer(
-        [0], buffer, offset); // Name of portal - currently unnamed portal.
-    offset = applyStringToBuffer(
-        statementName, buffer, offset); // Name of prepared statement.
+    // Name of portal - currently unnamed portal.
+    offset = applyBytesToBuffer([0], buffer, offset);
+    // Name of prepared statement.
+    offset = applyStringToBuffer(statementName, buffer, offset);
 
     // OK, if we have no specified types at all, we can use 0. If we have all specified types, we can use 1. If we have a mix, we have to individually
     // call out each type.
     if (typeSpecCount == parameters.length) {
       buffer.setUint16(offset, 1);
-      offset +=
-          2; // Apply following format code for all parameters by indicating 1
+      // Apply following format code for all parameters by indicating 1
+      offset += 2;
       buffer.setUint16(offset, _ClientMessage.FormatBinary);
       offset += 2; // Specify format code for all params is BINARY
     } else if (typeSpecCount == 0) {
       buffer.setUint16(offset, 1);
-      offset +=
-          2; // Apply following format code for all parameters by indicating 1
+      // Apply following format code for all parameters by indicating 1
+      offset += 2;
       buffer.setUint16(offset, _ClientMessage.FormatText);
       offset += 2; // Specify format code for all params is TEXT
     } else {
