@@ -1,8 +1,7 @@
 import 'package:postgres/postgres.dart';
+import 'package:postgres/src/exceptions.dart';
 import 'package:test/test.dart';
-import 'dart:io';
 import 'dart:async';
-import 'dart:mirrors';
 
 void main() {
   group("Transaction behavior", () {
@@ -293,7 +292,7 @@ void main() {
           await c.query("INSERT INTO t (id) VALUES (1)");
         });
         expect(true, false);
-      } on PostgreSQLException catch (e) {}
+      } on PostgreSQLException catch (_) {}
 
       var result = await conn.transaction((ctx) async {
         return await ctx.query("SELECT id FROM t");

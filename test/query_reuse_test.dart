@@ -1,4 +1,7 @@
 import 'package:postgres/postgres.dart';
+import 'package:postgres/src/exceptions.dart';
+import 'package:postgres/src/postgresql_codec.dart';
+import 'package:postgres/src/substituter.dart';
 import 'package:test/test.dart';
 import 'dart:async';
 import 'dart:mirrors';

@@ -1,7 +1,7 @@
-part of postgres;
+import 'package:postgres/src/postgresql_codec.dart';
 
 typedef String SQLReplaceIdentifierFunction(
-    _PostgreSQLFormatIdentifier identifier, int index);
+    PostgreSQLFormatIdentifier identifier, int index);
 
 class PostgreSQLFormat {
   static int _AtSignCodeUnit = "@".codeUnitAt(0);
@@ -122,7 +122,7 @@ class PostgreSQLFormat {
       if (t.type == _PostgreSQLFormatTokenType.text) {
         return t.buffer;
       } else {
-        var identifier = new _PostgreSQLFormatIdentifier(t.buffer.toString());
+        var identifier = new PostgreSQLFormatIdentifier(t.buffer.toString());
 
         if (!values.containsKey(identifier.name)) {
           throw new FormatException(
@@ -165,8 +165,8 @@ class _PostgreSQLFormatToken {
   StringBuffer buffer = new StringBuffer();
 }
 
-class _PostgreSQLFormatIdentifier {
-  _PostgreSQLFormatIdentifier(String t) {
+class PostgreSQLFormatIdentifier {
+  PostgreSQLFormatIdentifier(String t) {
     var components = t.split(":");
     if (components.length == 1) {
       name = components.first;

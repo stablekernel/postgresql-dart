@@ -1,4 +1,11 @@
-part of postgres;
+import 'dart:async';
+
+import 'dart:io';
+import 'package:postgres/src/client_messages.dart';
+import 'package:postgres/src/exceptions.dart';
+import 'package:postgres/src/message_window.dart';
+import 'package:postgres/src/query.dart';
+import 'package:postgres/src/server_messages.dart';
 
 abstract class PostgreSQLExecutionContext {
   /// Executes a query on this context.
@@ -61,7 +68,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       this.timeoutInSeconds: 30,
       this.timeZone: "UTC",
       this.useSSL: false}) {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = new PostgreSQLConnectionStateClosed();
     _connectionState.connection = this;
   }
 
@@ -96,7 +103,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// This is [true] when this instance is first created and after it has been closed or encountered an unrecoverable error.
   /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a new instance
   /// must be created.
-  bool get isClosed => _connectionState is _PostgreSQLConnectionStateClosed;
+  bool get isClosed => _connectionState is PostgreSQLConnectionStateClosed;
 
   /// Settings values from the connected database.
   ///
@@ -105,9 +112,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Map<String, String> settings = {};
 
   Socket _socket;
-  _MessageFramer _framer = new _MessageFramer();
+  MessageFramer _framer = new MessageFramer();
 
-  Map<String, _QueryCache> _reuseMap = {};
+  Map<String, QueryCache> _reuseMap = {};
   int _reuseCounter = 0;
 
   int _processID;
@@ -115,11 +122,11 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   List<int> _salt;
 
   bool _hasConnectedPreviously = false;
-  _PostgreSQLConnectionState _connectionState;
+  PostgreSQLConnectionState _connectionState;
 
-  List<_Query> _queryQueue = [];
+  List<Query> _queryQueue = [];
 
-  _Query get _pendingQuery {
+  Query get _pendingQuery {
     if (_queryQueue.isEmpty) {
       return null;
     }
@@ -151,17 +158,17 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
           .timeout(new Duration(seconds: timeoutInSeconds));
     }
 
-    _framer = new _MessageFramer();
+    _framer = new MessageFramer();
     _socket.listen(_readData,
         onError: _handleSocketError, onDone: _handleSocketClosed);
 
     var connectionComplete = new Completer();
     _transitionToState(
-        new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
+        new PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
     return connectionComplete.future
         .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: () {
-      _connectionState = new _PostgreSQLConnectionStateClosed();
+      _connectionState = new PostgreSQLConnectionStateClosed();
       _socket?.destroy();
 
       _cancelCurrentQueries();
@@ -174,7 +181,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///
   /// After the returned [Future] completes, this connection can no longer be used to execute queries. Any queries in progress or queued are cancelled.
   Future close() async {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = new PostgreSQLConnectionStateClosed();
 
     await _socket?.close();
 
@@ -210,7 +217,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
           "Attempting to execute query, but connection is not open.");
     }
 
-    var query = new _Query<List<List<dynamic>>>(
+    var query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, this, null);
     if (allowReuse) {
       query.statementIdentifier = _reuseIdentifierForQuery(query);
@@ -233,7 +240,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
           "Attempting to execute query, but connection is not open.");
     }
 
-    var query = new _Query<int>(fmtString, substitutionValues, this, null)
+    var query = new Query<int>(fmtString, substitutionValues, this, null)
       ..onlyReturnAffectedRowCount = true;
 
     return await _enqueue(query);
@@ -273,7 +280,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
           "Attempting to execute query, but connection is not open.");
     }
 
-    var proxy = new _TransactionProxy(this, queryBlock);
+    var proxy = new TransactionProxy(this, queryBlock);
 
     await _enqueue(proxy.beginQuery);
 
@@ -286,7 +293,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
   ////////
 
-  Future<dynamic> _enqueue(_Query query) async {
+  Future<dynamic> _enqueue(Query query) async {
     _queryQueue.add(query);
     _transitionToState(_connectionState.awake());
 
@@ -321,7 +328,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     });
   }
 
-  void _transitionToState(_PostgreSQLConnectionState newState) {
+  void _transitionToState(PostgreSQLConnectionState newState) {
     if (identical(newState, _connectionState)) {
       return;
     }
@@ -347,31 +354,31 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       var msg = _framer.popMessage().message;
 
       try {
-        if (msg is _ErrorResponseMessage) {
+        if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));
         } else {
           _transitionToState(_connectionState.onMessage(msg));
         }
-      } catch (e, st) {
+      } catch (e) {
         _handleSocketError(e);
       }
     }
   }
 
   void _handleSocketError(dynamic error) {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = new PostgreSQLConnectionStateClosed();
     _socket.destroy();
 
     _cancelCurrentQueries();
   }
 
   void _handleSocketClosed() {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = new PostgreSQLConnectionStateClosed();
 
     _cancelCurrentQueries();
   }
 
-  void _cacheQuery(_Query query) {
+  void _cacheQuery(Query query) {
     if (query.cache == null) {
       return;
     }
@@ -381,7 +388,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     }
   }
 
-  _QueryCache _cachedQuery(String statementIdentifier) {
+  QueryCache _cachedQuery(String statementIdentifier) {
     if (statementIdentifier == null) {
       return null;
     }
@@ -389,7 +396,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     return _reuseMap[statementIdentifier];
   }
 
-  String _reuseIdentifierForQuery(_Query q) {
+  String _reuseIdentifierForQuery(Query q) {
     var existing = _reuseMap[q.statement];
     if (existing != null) {
       return existing.preparedStatementName;
@@ -403,8 +410,483 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 }
 
-class _TransactionRollbackException implements Exception {
-  _TransactionRollbackException(this.reason);
+class TransactionRollbackException implements Exception {
+  TransactionRollbackException(this.reason);
 
   String reason;
 }
+
+typedef Future<dynamic> TransactionQuerySignature(
+    PostgreSQLExecutionContext connection);
+
+class TransactionProxy implements PostgreSQLExecutionContext {
+  TransactionProxy(this.connection, this.executionBlock) {
+    beginQuery = new Query<int>("BEGIN", {}, connection, this)
+      ..onlyReturnAffectedRowCount = true;
+
+    beginQuery.onComplete.future
+        .then(startTransaction)
+        .catchError(handleTransactionQueryError);
+  }
+
+  Query beginQuery;
+  Completer completer = new Completer();
+
+  Future get future => completer.future;
+
+  Query get pendingQuery {
+    if (queryQueue.length > 0) {
+      return queryQueue.first;
+    }
+
+    return null;
+  }
+
+  List<Query> queryQueue = [];
+  PostgreSQLConnection connection;
+  TransactionQuerySignature executionBlock;
+
+  Future commit() async {
+    await execute("COMMIT");
+  }
+
+  Future<List<List<dynamic>>> query(String fmtString,
+      {Map<String, dynamic> substitutionValues: null,
+      bool allowReuse: true}) async {
+    if (connection.isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<List<List<dynamic>>>(
+        fmtString, substitutionValues, connection, this);
+
+    if (allowReuse) {
+      query.statementIdentifier = connection._reuseIdentifierForQuery(query);
+    }
+
+    return await enqueue(query);
+  }
+
+  Future<int> execute(String fmtString,
+      {Map<String, dynamic> substitutionValues: null}) async {
+    if (connection.isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<int>(fmtString, substitutionValues, connection, this)
+      ..onlyReturnAffectedRowCount = true;
+
+    return enqueue(query);
+  }
+
+  void cancelTransaction({String reason: null}) {
+    throw new TransactionRollbackException(reason);
+  }
+
+  Future startTransaction(dynamic beginResults) async {
+    var result;
+    try {
+      result = await executionBlock(this);
+    } on TransactionRollbackException catch (rollback) {
+      queryQueue = [];
+      await execute("ROLLBACK");
+      completer.complete(new PostgreSQLRollback._(rollback.reason));
+      return;
+    } catch (e) {
+      queryQueue = [];
+
+      await execute("ROLLBACK");
+      completer.completeError(e);
+      return;
+    }
+
+    await execute("COMMIT");
+
+    completer.complete(result);
+  }
+
+  Future handleTransactionQueryError(dynamic err) async {}
+
+  Future<dynamic> enqueue(Query query) async {
+    queryQueue.add(query);
+    connection._transitionToState(connection._connectionState.awake());
+
+    var result = null;
+    try {
+      result = await query.future;
+
+      connection._cacheQuery(query);
+      queryQueue.remove(query);
+    } catch (e) {
+      connection._cacheQuery(query);
+      queryQueue.remove(query);
+      rethrow;
+    }
+
+    return result;
+  }
+}
+
+/// Represents a rollback from a transaction.
+///
+/// If a transaction is cancelled using [PostgreSQLExecutionContext.cancelTransaction], the value of the [Future]
+/// returned from [PostgreSQLConnection.transaction] will be an instance of this type. [reason] will be the [String]
+/// value of the optional argument to [PostgreSQLExecutionContext.cancelTransaction].
+class PostgreSQLRollback {
+  PostgreSQLRollback._(this.reason);
+
+  /// The reason the transaction was cancelled.
+  String reason;
+}
+
+abstract class PostgreSQLConnectionState {
+  PostgreSQLConnection connection;
+
+  PostgreSQLConnectionState onEnter() {
+    return this;
+  }
+
+  PostgreSQLConnectionState awake() {
+    return this;
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    return this;
+  }
+
+  PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
+    var exception = new PostgreSQLException.fromFields(message.fields);
+
+    if (exception.severity == PostgreSQLSeverity.fatal ||
+        exception.severity == PostgreSQLSeverity.panic) {
+      return new PostgreSQLConnectionStateClosed();
+    }
+
+    return this;
+  }
+
+  void onExit() {}
+}
+
+/*
+  Closed State; starts here and ends here.
+ */
+
+class PostgreSQLConnectionStateClosed extends PostgreSQLConnectionState {}
+
+/*
+  Socket connected, prior to any PostgreSQL handshaking - initiates that handshaking
+ */
+
+class PostgreSQLConnectionStateSocketConnected
+    extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateSocketConnected(this.completer);
+
+  Completer completer;
+
+  PostgreSQLConnectionState onEnter() {
+    var startupMessage = new StartupMessage(
+        connection.databaseName, connection.timeZone,
+        username: connection.username);
+
+    connection._socket.add(startupMessage.asBytes());
+
+    return this;
+  }
+
+  PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
+    var exception = new PostgreSQLException.fromFields(message.fields);
+
+    completer.completeError(exception);
+
+    return new PostgreSQLConnectionStateClosed();
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    AuthenticationMessage authMessage = message;
+
+    // Pass on the pending op to subsequent stages
+    if (authMessage.type == AuthenticationMessage.KindOK) {
+      return new PostgreSQLConnectionStateAuthenticated(completer);
+    } else if (authMessage.type == AuthenticationMessage.KindMD5Password) {
+      connection._salt = authMessage.salt;
+
+      return new PostgreSQLConnectionStateAuthenticating(completer);
+    }
+
+    completer.completeError(
+        new PostgreSQLException("Unsupported authentication type ${authMessage
+            .type}, closing connection."));
+
+    return new PostgreSQLConnectionStateClosed();
+  }
+}
+
+/*
+  Authenticating state
+ */
+
+class PostgreSQLConnectionStateAuthenticating
+    extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateAuthenticating(this.completer);
+
+  Completer completer;
+
+  PostgreSQLConnectionState onEnter() {
+    var authMessage = new AuthMD5Message(
+        connection.username, connection.password, connection._salt);
+
+    connection._socket.add(authMessage.asBytes());
+
+    return this;
+  }
+
+  PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
+    var exception = new PostgreSQLException.fromFields(message.fields);
+
+    completer.completeError(exception);
+
+    return new PostgreSQLConnectionStateClosed();
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    if (message is ParameterStatusMessage) {
+      connection.settings[message.name] = message.value;
+    } else if (message is BackendKeyMessage) {
+      connection._secretKey = message.secretKey;
+      connection._processID = message.processID;
+    } else if (message is ReadyForQueryMessage) {
+      if (message.state == ReadyForQueryMessage.StateIdle) {
+        return new PostgreSQLConnectionStateIdle(openCompleter: completer);
+      }
+    }
+
+    return this;
+  }
+}
+
+/*
+  Authenticated state
+ */
+
+class PostgreSQLConnectionStateAuthenticated
+    extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateAuthenticated(this.completer);
+
+  Completer completer;
+
+  PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
+    var exception = new PostgreSQLException.fromFields(message.fields);
+
+    completer.completeError(exception);
+
+    return new PostgreSQLConnectionStateClosed();
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    if (message is ParameterStatusMessage) {
+      connection.settings[message.name] = message.value;
+    } else if (message is BackendKeyMessage) {
+      connection._secretKey = message.secretKey;
+      connection._processID = message.processID;
+    } else if (message is ReadyForQueryMessage) {
+      if (message.state == ReadyForQueryMessage.StateIdle) {
+        return new PostgreSQLConnectionStateIdle(openCompleter: completer);
+      }
+    }
+
+    return this;
+  }
+}
+
+/*
+  Ready/idle state
+ */
+
+class PostgreSQLConnectionStateIdle extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateIdle({this.openCompleter});
+
+  Completer openCompleter;
+
+  PostgreSQLConnectionState awake() {
+    var pendingQuery = connection._pendingQuery;
+    if (pendingQuery != null) {
+      return processQuery(pendingQuery);
+    }
+
+    return this;
+  }
+
+  PostgreSQLConnectionState processQuery(Query q) {
+    try {
+      if (q.onlyReturnAffectedRowCount) {
+        q.sendSimple(connection._socket);
+        return new PostgreSQLConnectionStateBusy(q);
+      }
+
+      var cached = connection._cachedQuery(q.statement);
+      q.sendExtended(connection._socket, cacheQuery: cached);
+
+      return new PostgreSQLConnectionStateBusy(q);
+    } catch (e) {
+      scheduleMicrotask(() {
+        q.completeError(e);
+        connection._transitionToState(new PostgreSQLConnectionStateIdle());
+      });
+
+      return new PostgreSQLConnectionStateDeferredFailure();
+    }
+  }
+
+  PostgreSQLConnectionState onEnter() {
+    openCompleter?.complete();
+
+    return awake();
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    return this;
+  }
+}
+
+/*
+  Busy state, query in progress
+ */
+
+class PostgreSQLConnectionStateBusy extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateBusy(this.query);
+
+  Query query;
+  PostgreSQLException returningException = null;
+  int rowsAffected = 0;
+
+  PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
+    // If we get an error here, then we should eat the rest of the messages
+    // and we are always confirmed to get a ReadyForQueryMessage to finish up.
+    // We should only report the error once that is done.
+    var exception = new PostgreSQLException.fromFields(message.fields);
+    returningException ??= exception;
+
+    if (exception.severity == PostgreSQLSeverity.fatal ||
+        exception.severity == PostgreSQLSeverity.panic) {
+      return new PostgreSQLConnectionStateClosed();
+    }
+
+    return this;
+  }
+
+  PostgreSQLConnectionState onMessage(ServerMessage message) {
+    // We ignore NoData, as it doesn't tell us anything we don't already know
+    // or care about.
+
+    //print("(${query.statement}) -> $message");
+
+    if (message is ReadyForQueryMessage) {
+      if (message.state == ReadyForQueryMessage.StateIdle) {
+        if (returningException != null) {
+          query.completeError(returningException);
+        } else {
+          query.complete(rowsAffected);
+        }
+
+        return new PostgreSQLConnectionStateIdle();
+      } else if (message.state == ReadyForQueryMessage.StateTransaction) {
+        if (returningException != null) {
+          query.completeError(returningException);
+        } else {
+          query.complete(rowsAffected);
+        }
+
+        return new PostgreSQLConnectionStateReadyInTransaction(
+            query.transaction);
+      } else if (message.state == ReadyForQueryMessage.StateTransactionError) {
+        // This should cancel the transaction, we may have to send a commit here
+        query.completeError(returningException);
+        return new PostgreSQLConnectionStateTransactionFailure(
+            query.transaction);
+      }
+    } else if (message is CommandCompleteMessage) {
+      rowsAffected = message.rowsAffected;
+    } else if (message is RowDescriptionMessage) {
+      query.fieldDescriptions = message.fieldDescriptions;
+    } else if (message is DataRowMessage) {
+      query.addRow(message.values);
+    } else if (message is ParameterDescriptionMessage) {
+      var validationException =
+      query.validateParameters(message.parameterTypeIDs);
+      if (validationException != null) {
+        query.cache = null;
+      }
+      returningException ??= validationException;
+    }
+
+    return this;
+  }
+}
+
+/* Idle Transaction State */
+
+class PostgreSQLConnectionStateReadyInTransaction
+    extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateReadyInTransaction(this.transaction);
+
+  TransactionProxy transaction;
+
+  PostgreSQLConnectionState onEnter() {
+    return awake();
+  }
+
+  PostgreSQLConnectionState awake() {
+    var pendingQuery = transaction.pendingQuery;
+    if (pendingQuery != null) {
+      return processQuery(pendingQuery);
+    }
+
+    return this;
+  }
+
+  PostgreSQLConnectionState processQuery(Query q) {
+    try {
+      if (q.onlyReturnAffectedRowCount) {
+        q.sendSimple(connection._socket);
+        return new PostgreSQLConnectionStateBusy(q);
+      }
+
+      var cached = connection._cachedQuery(q.statement);
+      q.sendExtended(connection._socket, cacheQuery: cached);
+
+      return new PostgreSQLConnectionStateBusy(q);
+    } catch (e) {
+      scheduleMicrotask(() {
+        q.completeError(e);
+        connection._transitionToState(new PostgreSQLConnectionStateIdle());
+      });
+
+      return new PostgreSQLConnectionStateDeferredFailure();
+    }
+  }
+}
+
+/*
+  Transaction error state
+ */
+
+class PostgreSQLConnectionStateTransactionFailure
+    extends PostgreSQLConnectionState {
+  PostgreSQLConnectionStateTransactionFailure(this.transaction);
+
+  TransactionProxy transaction;
+
+  PostgreSQLConnectionState awake() {
+    return new PostgreSQLConnectionStateReadyInTransaction(transaction);
+  }
+}
+
+/*
+  Hack for deferred error
+ */
+
+class PostgreSQLConnectionStateDeferredFailure
+    extends PostgreSQLConnectionState {}

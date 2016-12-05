@@ -1,4 +1,4 @@
-part of postgres;
+import 'dart:convert';
 
 class UTF8BackedString {
   UTF8BackedString(this.string);

@@ -1,19 +1,22 @@
-part of postgres;
+import 'dart:io';
+import 'dart:typed_data';
 
-class _MessageFrame {
+import 'package:postgres/src/server_messages.dart';
+
+class MessageFrame {
   static Map<int, Function> _messageTypeMap = {
-    49: () => new _ParseCompleteMessage(),
-    50: () => new _BindCompleteMessage(),
-    67: () => new _CommandCompleteMessage(),
-    68: () => new _DataRowMessage(),
-    69: () => new _ErrorResponseMessage(),
-    75: () => new _BackendKeyMessage(),
-    82: () => new _AuthenticationMessage(),
-    83: () => new _ParameterStatusMessage(),
-    84: () => new _RowDescriptionMessage(),
-    90: () => new _ReadyForQueryMessage(),
-    110: () => new _NoDataMessage(),
-    116: () => new _ParameterDescriptionMessage()
+    49: () => new ParseCompleteMessage(),
+    50: () => new BindCompleteMessage(),
+    67: () => new CommandCompleteMessage(),
+    68: () => new DataRowMessage(),
+    69: () => new ErrorResponseMessage(),
+    75: () => new BackendKeyMessage(),
+    82: () => new AuthenticationMessage(),
+    83: () => new ParameterStatusMessage(),
+    84: () => new RowDescriptionMessage(),
+    90: () => new ReadyForQueryMessage(),
+    110: () => new NoDataMessage(),
+    116: () => new ParameterDescriptionMessage()
   };
 
   BytesBuilder _inputBuffer = new BytesBuilder(copy: false);
@@ -65,16 +68,16 @@ class _MessageFrame {
     return bytes.length;
   }
 
-  _ServerMessage get message {
+  ServerMessage get message {
     var msgMaker = _messageTypeMap[type];
     if (msgMaker == null) {
       msgMaker = () {
-        var msg = new _UnknownMessage()..code = type;
+        var msg = new UnknownMessage()..code = type;
         return msg;
       };
     }
 
-    _ServerMessage msg = msgMaker();
+    ServerMessage msg = msgMaker();
 
     msg.readBytes(data);
 
@@ -82,9 +85,9 @@ class _MessageFrame {
   }
 }
 
-class _MessageFramer {
-  _MessageFrame messageInProgress = new _MessageFrame();
-  List<_MessageFrame> messageQueue = [];
+class MessageFramer {
+  MessageFrame messageInProgress = new MessageFrame();
+  List<MessageFrame> messageQueue = [];
 
   void addBytes(Uint8List bytes) {
     var offsetIntoBytesRead = 0;
@@ -95,14 +98,14 @@ class _MessageFramer {
 
       if (messageInProgress.isComplete) {
         messageQueue.add(messageInProgress);
-        messageInProgress = new _MessageFrame();
+        messageInProgress = new MessageFrame();
       }
     } while (offsetIntoBytesRead != bytes.length);
   }
 
   bool get hasMessage => messageQueue.isNotEmpty;
 
-  _MessageFrame popMessage() {
+  MessageFrame popMessage() {
     return messageQueue.removeAt(0);
   }
 }

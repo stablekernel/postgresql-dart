@@ -1,7 +1,15 @@
-part of postgres;
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:postgres/src/client_messages.dart';
+import 'package:postgres/src/connection.dart';
+import 'package:postgres/src/exceptions.dart';
+import 'package:postgres/src/postgresql_codec.dart';
+import 'package:postgres/src/substituter.dart';
 
-class _Query<T> {
-  _Query(this.statement, this.substitutionValues, this.connection,
+class Query<T> {
+  Query(this.statement, this.substitutionValues, this.connection,
       this.transaction);
 
   bool onlyReturnAffectedRowCount = false;
@@ -12,32 +20,32 @@ class _Query<T> {
 
   final String statement;
   final Map<String, dynamic> substitutionValues;
-  final _TransactionProxy transaction;
+  final TransactionProxy transaction;
   final PostgreSQLConnection connection;
 
   List<int> specifiedParameterTypeCodes;
 
-  List<_FieldDescription> _fieldDescriptions;
+  List<FieldDescription> _fieldDescriptions;
 
-  List<_FieldDescription> get fieldDescriptions => _fieldDescriptions;
+  List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
 
-  void set fieldDescriptions(List<_FieldDescription> fds) {
+  void set fieldDescriptions(List<FieldDescription> fds) {
     _fieldDescriptions = fds;
     cache?.fieldDescriptions = fds;
   }
 
   List<Iterable<dynamic>> rows = [];
 
-  _QueryCache cache;
+  QueryCache cache;
 
   void sendSimple(Socket socket) {
     var sqlString = PostgreSQLFormat.substitute(statement, substitutionValues);
-    var queryMessage = new _QueryMessage(sqlString);
+    var queryMessage = new QueryMessage(sqlString);
 
     socket.add(queryMessage.asBytes());
   }
 
-  void sendExtended(Socket socket, {_QueryCache cacheQuery: null}) {
+  void sendExtended(Socket socket, {QueryCache cacheQuery: null}) {
     if (cacheQuery != null) {
       fieldDescriptions = cacheQuery.fieldDescriptions;
       sendCachedQuery(socket, cacheQuery, substitutionValues);
@@ -46,9 +54,9 @@ class _Query<T> {
     }
 
     String statementName = (statementIdentifier ?? "");
-    var formatIdentifiers = <_PostgreSQLFormatIdentifier>[];
+    var formatIdentifiers = <PostgreSQLFormatIdentifier>[];
     var sqlString = PostgreSQLFormat.substitute(statement, substitutionValues,
-        replace: (_PostgreSQLFormatIdentifier identifier, int index) {
+        replace: (PostgreSQLFormatIdentifier identifier, int index) {
       formatIdentifiers.add(identifier);
 
       return "\$$index";
@@ -62,43 +70,43 @@ class _Query<T> {
         .toList();
 
     var messages = [
-      new _ParseMessage(sqlString, statementName: statementName),
-      new _DescribeMessage(statementName: statementName),
-      new _BindMessage(parameterList, statementName: statementName),
-      new _ExecuteMessage(),
-      new _SyncMessage()
+      new ParseMessage(sqlString, statementName: statementName),
+      new DescribeMessage(statementName: statementName),
+      new BindMessage(parameterList, statementName: statementName),
+      new ExecuteMessage(),
+      new SyncMessage()
     ];
 
     if (statementIdentifier != null) {
-      cache = new _QueryCache(statementIdentifier, formatIdentifiers);
+      cache = new QueryCache(statementIdentifier, formatIdentifiers);
     }
 
-    socket.add(_ClientMessage.aggregateBytes(messages));
+    socket.add(ClientMessage.aggregateBytes(messages));
   }
 
-  void sendCachedQuery(Socket socket, _QueryCache cacheQuery,
+  void sendCachedQuery(Socket socket, QueryCache cacheQuery,
       Map<String, dynamic> substitutionValues) {
     var statementName = cacheQuery.preparedStatementName;
     var parameterList = cacheQuery.orderedParameters
         .map((identifier) => encodeParameter(identifier, substitutionValues))
         .toList();
 
-    var bytes = _ClientMessage.aggregateBytes([
-      new _BindMessage(parameterList, statementName: statementName),
-      new _ExecuteMessage(),
-      new _SyncMessage()
+    var bytes = ClientMessage.aggregateBytes([
+      new BindMessage(parameterList, statementName: statementName),
+      new ExecuteMessage(),
+      new SyncMessage()
     ]);
 
     socket.add(bytes);
   }
 
-  _ParameterValue encodeParameter(_PostgreSQLFormatIdentifier identifier,
+  ParameterValue encodeParameter(PostgreSQLFormatIdentifier identifier,
       Map<String, dynamic> substitutionValues) {
     if (identifier.typeCode != null) {
-      return new _ParameterValue.binary(
+      return new ParameterValue.binary(
           substitutionValues[identifier.name], identifier.typeCode);
     } else {
-      return new _ParameterValue.text(substitutionValues[identifier.name]);
+      return new ParameterValue.text(substitutionValues[identifier.name]);
     }
   }
 
@@ -150,12 +158,12 @@ class _Query<T> {
   String toString() => statement;
 }
 
-class _QueryCache {
-  _QueryCache(this.preparedStatementName, this.orderedParameters);
+class QueryCache {
+  QueryCache(this.preparedStatementName, this.orderedParameters);
 
   String preparedStatementName;
-  List<_PostgreSQLFormatIdentifier> orderedParameters;
-  List<_FieldDescription> fieldDescriptions;
+  List<PostgreSQLFormatIdentifier> orderedParameters;
+  List<FieldDescription> fieldDescriptions;
 
   bool get isValid {
     return preparedStatementName != null &&
@@ -164,8 +172,8 @@ class _QueryCache {
   }
 }
 
-class _ParameterValue {
-  _ParameterValue.binary(dynamic value, this.postgresType) {
+class ParameterValue {
+  ParameterValue.binary(dynamic value, this.postgresType) {
     isBinary = true;
     bytes = PostgreSQLCodec
         .encodeBinary(value, this.postgresType)
@@ -174,7 +182,7 @@ class _ParameterValue {
     length = bytes?.length ?? 0;
   }
 
-  _ParameterValue.text(dynamic value) {
+  ParameterValue.text(dynamic value) {
     isBinary = false;
     if (value != null) {
       bytes = UTF8.encode(PostgreSQLCodec.encode(value, escapeStrings: false));
@@ -188,7 +196,7 @@ class _ParameterValue {
   int length;
 }
 
-class _FieldDescription {
+class FieldDescription {
   String fieldName;
   int tableID;
   int columnID;
