@@ -49,13 +49,15 @@ void main() {
       expect(result, [expectedRow]);
     });
 
-    test("Really long raw query returning", () async {
-      var result = await connection.execute("INSERT INTO t (t) VALUES ('$lorumIpsum') returning t;");
-      expect(result, "foo");
+    test("Really long raw substitution value", () async {
+      var result = await connection.query("INSERT INTO t (t) VALUES (${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)}) returning t;", substitutionValues: {
+        "t" : lorumIpsum
+      });
+      expect(result, [[lorumIpsum]]);
     });
 
-    test("Really long raw query with other values", () async {
-      var result = await connection.execute("INSERT INTO t (i,t,si) VALUES (4,'$lorumIpsum', 1);");
+    test("Really long SQL string in execute", () async {
+      var result = await connection.execute("INSERT INTO t (t) VALUES ('$lorumIpsum') returning t;");
       expect(result, 1);
     });
 

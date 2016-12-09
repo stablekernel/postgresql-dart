@@ -1,6 +1,7 @@
 part of postgres;
 
 class _MessageFrame {
+  static const int HeaderByteSize = 5;
   static Map<int, Function> _messageTypeMap = {
     49: () => new _ParseCompleteMessage(),
     50: () => new _BindCompleteMessage(),
@@ -16,7 +17,8 @@ class _MessageFrame {
     116: () => new _ParameterDescriptionMessage()
   };
 
-  BytesBuilder _inputBuffer = new BytesBuilder(copy: false);
+  BytesBuilder inputBuffer = new BytesBuilder(copy: false);
+  bool get hasReadHeader => type != null;
   int type;
   int expectedLength;
 
@@ -24,45 +26,53 @@ class _MessageFrame {
   Uint8List data;
 
   int addBytes(Uint8List bytes) {
-    // If we just have the beginning of a packet, then consume the bytes and continue.
-    if (_inputBuffer.length + bytes.length < 5) {
-      _inputBuffer.add(bytes);
+    inputBuffer.add(new Uint8List.view(bytes.buffer, bytes.offsetInBytes));
+
+    // If we don't yet have a full header, inform that we consumed all of
+    // the bytes and wait for the next packet.
+    if (!hasReadHeader && inputBuffer.length < HeaderByteSize) {
       return bytes.length;
     }
 
-    // If we have enough data to get the header out, peek at that data and store it
-    // This could be 5 if we haven't collected any data yet, or 1-4 if got a few bytes
-    // from a previous packet. It can't be <= 0 though, as the first precondition
-    // would have failed and we'd be right here.
-    var countNeededFromIncomingToDetermineMessage = 5 - _inputBuffer.length;
-    var headerBuffer = new Uint8List(5);
-    if (countNeededFromIncomingToDetermineMessage < 5) {
-      var takenBytes = _inputBuffer.takeBytes();
-      headerBuffer.setRange(0, takenBytes.length, takenBytes);
-    }
-    headerBuffer.setRange(
-        5 - countNeededFromIncomingToDetermineMessage,
-        5,
-        new Uint8List.view(bytes.buffer, bytes.offsetInBytes,
-            countNeededFromIncomingToDetermineMessage));
+    var combinedBytes = inputBuffer.takeBytes();
+    var offsetIntoIncomingBytes = 0;
+    var byteBufferLengthRemaining = combinedBytes.length;
+    if (!hasReadHeader) {
+      var headerBuffer = new Uint8List(5)
+        ..setRange(0, HeaderByteSize, combinedBytes);
 
-    var bufReader = new ByteData.view(headerBuffer.buffer);
-    type = bufReader.getUint8(0);
-    // Remove this length from the length needed to complete this message
-    expectedLength = bufReader.getUint32(1) - 4;
+      var bufReader = new ByteData.view(headerBuffer.buffer);
+      type = bufReader.getUint8(0);
+      expectedLength = bufReader.getUint32(1) - 4;
 
-    var offsetIntoIncomingBytes = countNeededFromIncomingToDetermineMessage;
-    var byteBufferLengthRemaining = bytes.length - offsetIntoIncomingBytes;
-    if (byteBufferLengthRemaining >= expectedLength) {
-      _inputBuffer.add(new Uint8List.view(bytes.buffer,
-          bytes.offsetInBytes + offsetIntoIncomingBytes, expectedLength));
-      data = _inputBuffer.takeBytes();
-      return offsetIntoIncomingBytes + expectedLength;
+      offsetIntoIncomingBytes += HeaderByteSize;
+      byteBufferLengthRemaining -= HeaderByteSize;
     }
 
-    _inputBuffer.add(new Uint8List.view(
-        bytes.buffer, bytes.offsetInBytes + offsetIntoIncomingBytes));
-    return bytes.length;
+    // If we don't have enough to fully construct this message,
+    // add the remaining bytes to the buffer. We've already set the header,
+    // so we can discard those bytes.
+    if (byteBufferLengthRemaining < expectedLength) {
+      inputBuffer.add(combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
+      return bytes.length;
+    }
+
+    // We have exactly the right number of bytes, so indicate we consumed all
+    // of the new bytes and take the data.
+    if (byteBufferLengthRemaining == expectedLength) {
+      data = combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length);
+      return bytes.length;
+    }
+
+    // If we got all the data we need, but still have more bytes,
+    // we can take the data and let the caller know we didn't consume
+    // all of the bytes.
+    data = combinedBytes.sublist(offsetIntoIncomingBytes, expectedLength + offsetIntoIncomingBytes);
+    offsetIntoIncomingBytes += expectedLength;
+    byteBufferLengthRemaining -= expectedLength;
+    inputBuffer.add(combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
+
+    return bytes.length - byteBufferLengthRemaining;
   }
 
   _ServerMessage get message {
