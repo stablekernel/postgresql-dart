@@ -1,20 +1,22 @@
-part of postgres;
+import 'dart:typed_data';
+import 'dart:io';
+import 'server_messages.dart';
 
-class _MessageFrame {
+class MessageFrame {
   static const int HeaderByteSize = 5;
-  static Map<int, Function> _messageTypeMap = {
-    49: () => new _ParseCompleteMessage(),
-    50: () => new _BindCompleteMessage(),
-    67: () => new _CommandCompleteMessage(),
-    68: () => new _DataRowMessage(),
-    69: () => new _ErrorResponseMessage(),
-    75: () => new _BackendKeyMessage(),
-    82: () => new _AuthenticationMessage(),
-    83: () => new _ParameterStatusMessage(),
-    84: () => new _RowDescriptionMessage(),
-    90: () => new _ReadyForQueryMessage(),
-    110: () => new _NoDataMessage(),
-    116: () => new _ParameterDescriptionMessage()
+  static Map<int, Function> messageTypeMap = {
+    49: () => new ParseCompleteMessage(),
+    50: () => new BindCompleteMessage(),
+    67: () => new CommandCompleteMessage(),
+    68: () => new DataRowMessage(),
+    69: () => new ErrorResponseMessage(),
+    75: () => new BackendKeyMessage(),
+    82: () => new AuthenticationMessage(),
+    83: () => new ParameterStatusMessage(),
+    84: () => new RowDescriptionMessage(),
+    90: () => new ReadyForQueryMessage(),
+    110: () => new NoDataMessage(),
+    116: () => new ParameterDescriptionMessage()
   };
 
   BytesBuilder inputBuffer = new BytesBuilder(copy: false);
@@ -53,38 +55,42 @@ class _MessageFrame {
     // add the remaining bytes to the buffer. We've already set the header,
     // so we can discard those bytes.
     if (byteBufferLengthRemaining < expectedLength) {
-      inputBuffer.add(combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
+      inputBuffer.add(
+          combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
       return bytes.length;
     }
 
     // We have exactly the right number of bytes, so indicate we consumed all
     // of the new bytes and take the data.
     if (byteBufferLengthRemaining == expectedLength) {
-      data = combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length);
+      data =
+          combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length);
       return bytes.length;
     }
 
     // If we got all the data we need, but still have more bytes,
     // we can take the data and let the caller know we didn't consume
     // all of the bytes.
-    data = combinedBytes.sublist(offsetIntoIncomingBytes, expectedLength + offsetIntoIncomingBytes);
+    data = combinedBytes.sublist(
+        offsetIntoIncomingBytes, expectedLength + offsetIntoIncomingBytes);
     offsetIntoIncomingBytes += expectedLength;
     byteBufferLengthRemaining -= expectedLength;
-    inputBuffer.add(combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
+    inputBuffer.add(
+        combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
 
     return bytes.length - byteBufferLengthRemaining;
   }
 
-  _ServerMessage get message {
-    var msgMaker = _messageTypeMap[type];
+  ServerMessage get message {
+    var msgMaker = messageTypeMap[type];
     if (msgMaker == null) {
       msgMaker = () {
-        var msg = new _UnknownMessage()..code = type;
+        var msg = new UnknownMessage()..code = type;
         return msg;
       };
     }
 
-    _ServerMessage msg = msgMaker();
+    ServerMessage msg = msgMaker();
 
     msg.readBytes(data);
 
@@ -92,9 +98,9 @@ class _MessageFrame {
   }
 }
 
-class _MessageFramer {
-  _MessageFrame messageInProgress = new _MessageFrame();
-  List<_MessageFrame> messageQueue = [];
+class MessageFramer {
+  MessageFrame messageInProgress = new MessageFrame();
+  List<MessageFrame> messageQueue = [];
 
   void addBytes(Uint8List bytes) {
     var offsetIntoBytesRead = 0;
@@ -105,14 +111,14 @@ class _MessageFramer {
 
       if (messageInProgress.isComplete) {
         messageQueue.add(messageInProgress);
-        messageInProgress = new _MessageFrame();
+        messageInProgress = new MessageFrame();
       }
     } while (offsetIntoBytesRead != bytes.length);
   }
 
   bool get hasMessage => messageQueue.isNotEmpty;
 
-  _MessageFrame popMessage() {
+  MessageFrame popMessage() {
     return messageQueue.removeAt(0);
   }
 }

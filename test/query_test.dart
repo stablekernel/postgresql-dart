@@ -1,5 +1,6 @@
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
+import 'package:postgres/src/postgresql_codec.dart';
 
 void main() {
   group("Successful queries", () {
