@@ -50,8 +50,6 @@ class AuthenticationMessage implements ServerMessage {
       }
     }
   }
-
-  String toString() => "Authentication: $type";
 }
 
 class ParameterStatusMessage extends ServerMessage {
@@ -63,8 +61,6 @@ class ParameterStatusMessage extends ServerMessage {
     value =
         UTF8.decode(bytes.sublist(bytes.indexOf(0) + 1, bytes.lastIndexOf(0)));
   }
-
-  String toString() => "Parameter Message: $name $value";
 }
 
 class ReadyForQueryMessage extends ServerMessage {
@@ -77,8 +73,6 @@ class ReadyForQueryMessage extends ServerMessage {
   void readBytes(Uint8List bytes) {
     state = UTF8.decode(bytes);
   }
-
-  String toString() => "Ready Message: $state";
 }
 
 class BackendKeyMessage extends ServerMessage {
@@ -90,8 +84,6 @@ class BackendKeyMessage extends ServerMessage {
     processID = view.getUint32(0);
     secretKey = view.getUint32(4);
   }
-
-  String toString() => "Backend Key Message: $processID $secretKey";
 }
 
 class RowDescriptionMessage extends ServerMessage {
@@ -110,8 +102,6 @@ class RowDescriptionMessage extends ServerMessage {
       fieldDescriptions.add(rowDesc);
     }
   }
-
-  String toString() => "RowDescription Message: $fieldDescriptions";
 }
 
 class DataRowMessage extends ServerMessage {
@@ -158,8 +148,6 @@ class CommandCompleteMessage extends ServerMessage {
       rowsAffected = 0;
     }
   }
-
-  String toString() => "Command Complete Message: $rowsAffected";
 }
 
 class ParseCompleteMessage extends ServerMessage {
@@ -191,8 +179,6 @@ class ParameterDescriptionMessage extends ServerMessage {
       parameterTypeIDs.add(v);
     }
   }
-
-  String toString() => "Parameter Description Message: $parameterTypeIDs";
 }
 
 class NoDataMessage extends ServerMessage {
@@ -208,8 +194,6 @@ class UnknownMessage extends ServerMessage {
   void readBytes(Uint8List bytes) {
     this.bytes = bytes;
   }
-
-  String toString() => "Unknown message: $code $bytes";
 
   @override
   operator ==(dynamic other) {
@@ -285,6 +269,4 @@ class ErrorField {
       _buffer.writeCharCode(byte);
     }
   }
-
-  String toString() => text;
 }
