@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'dart:io';
 import 'server_messages.dart';
+import 'dart:math';
 
 class MessageFrame {
   static const int HeaderByteSize = 5;
@@ -19,81 +20,103 @@ class MessageFrame {
     116: () => new ParameterDescriptionMessage()
   };
 
-  BytesBuilder inputBuffer = new BytesBuilder(copy: false);
+  int get bytesAvailable => packets.fold(0, (sum, v) => sum + v.lengthInBytes);
+  List<Uint8List> packets = [];
   bool get hasReadHeader => type != null;
   int type;
   int expectedLength;
 
-  bool get isComplete => data != null;
+  bool get isComplete => data != null || expectedLength == 0;
   Uint8List data;
 
-  int addBytes(Uint8List bytes) {
-    inputBuffer.add(new Uint8List.view(bytes.buffer, bytes.offsetInBytes));
-
-    // If we don't yet have a full header, inform that we consumed all of
-    // the bytes and wait for the next packet.
-    if (!hasReadHeader && inputBuffer.length < HeaderByteSize) {
-      return bytes.length;
+  ByteData consumeNextBytes(int length) {
+    if (length == 0) {
+      return null;
     }
 
-    var combinedBytes = inputBuffer.takeBytes();
-    var offsetIntoIncomingBytes = 0;
-    var byteBufferLengthRemaining = combinedBytes.length;
+    if (bytesAvailable >= length) {
+      var firstPacket = packets.first;
+
+      // The packet exactly matches the size of the bytes needed,
+      // remove & return it.
+      if (firstPacket.lengthInBytes == length) {
+        packets.removeAt(0);
+        return firstPacket.buffer.asByteData(firstPacket.offsetInBytes, firstPacket.lengthInBytes);
+      }
+
+      if (firstPacket.lengthInBytes > length) {
+        // We have to split up this packet and remove & return the first portion of it,
+        // and replace it with the second portion of it.
+        var remainingOffset = firstPacket.offsetInBytes + length;
+        var bytesNeeded = firstPacket.buffer.asByteData(firstPacket.offsetInBytes, length);
+        var bytesRemaining = firstPacket.buffer.asUint8List(remainingOffset, firstPacket.lengthInBytes - length);
+        packets.removeAt(0);
+        packets.insert(0, bytesRemaining);
+
+        return bytesNeeded;
+      }
+
+      // Otherwise, the first packet can't fill this message, but we know
+      // we have enough packets overall to fulfill it. So we can build
+      // a total buffer by accumulating multiple packets into that buffer.
+      // Each packet gets removed along the way, except for the last one,
+      // in which case if it has more bytes available, it gets replaced
+      // with the remaining bytes.
+
+      var builder = new BytesBuilder(copy: false);
+      var bytesNeeded = length - builder.length;
+      while(bytesNeeded > 0) {
+        var packet = packets.removeAt(0);
+        var bytesRemaining = packet.lengthInBytes;
+
+        if (bytesRemaining <= bytesNeeded) {
+          builder.add(packet.buffer.asUint8List(packet.offsetInBytes, packet.lengthInBytes));
+        } else {
+          builder.add(packet.buffer.asUint8List(packet.offsetInBytes, bytesNeeded));
+          packets.insert(0, packet.buffer.asUint8List(bytesNeeded, bytesRemaining - bytesNeeded));
+        }
+
+        bytesNeeded = length - builder.length;
+      }
+
+      return new Uint8List.fromList(builder.takeBytes()).buffer.asByteData();
+    }
+
+    return null;
+  }
+
+  int addBytes(Uint8List packet) {
+    packets.add(packet);
+
     if (!hasReadHeader) {
-      var headerBuffer = new Uint8List(5)
-        ..setRange(0, HeaderByteSize, combinedBytes);
+      ByteData headerBuffer = consumeNextBytes(HeaderByteSize);
+      if (headerBuffer == null) {
+        return packet.lengthInBytes;
+      }
 
-      var bufReader = new ByteData.view(headerBuffer.buffer);
-      type = bufReader.getUint8(0);
-      expectedLength = bufReader.getUint32(1) - 4;
-
-      offsetIntoIncomingBytes += HeaderByteSize;
-      byteBufferLengthRemaining -= HeaderByteSize;
+      type = headerBuffer.getUint8(0);
+      expectedLength = headerBuffer.getUint32(1) - 4;
     }
 
-    // If we don't have enough to fully construct this message,
-    // add the remaining bytes to the buffer. We've already set the header,
-    // so we can discard those bytes.
-    if (byteBufferLengthRemaining < expectedLength) {
-      inputBuffer.add(
-          combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
-      return bytes.length;
+    if (expectedLength == 0) {
+      return packet.lengthInBytes - bytesAvailable;
     }
 
-    // We have exactly the right number of bytes, so indicate we consumed all
-    // of the new bytes and take the data.
-    if (byteBufferLengthRemaining == expectedLength) {
-      data =
-          combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length);
-      return bytes.length;
+    var body = consumeNextBytes(expectedLength);
+    if (body == null) {
+      return packet.lengthInBytes;
     }
 
-    // If we got all the data we need, but still have more bytes,
-    // we can take the data and let the caller know we didn't consume
-    // all of the bytes.
-    data = combinedBytes.sublist(
-        offsetIntoIncomingBytes, expectedLength + offsetIntoIncomingBytes);
-    offsetIntoIncomingBytes += expectedLength;
-    byteBufferLengthRemaining -= expectedLength;
-    inputBuffer.add(
-        combinedBytes.sublist(offsetIntoIncomingBytes, combinedBytes.length));
+    data = body.buffer.asUint8List(body.offsetInBytes, body.lengthInBytes);
 
-    return bytes.length - byteBufferLengthRemaining;
+    return packet.lengthInBytes - bytesAvailable;
   }
 
   ServerMessage get message {
-    var msgMaker = messageTypeMap[type];
-    if (msgMaker == null) {
-      msgMaker = () {
-        var msg = new UnknownMessage()..code = type;
-        return msg;
-      };
-    }
+    var msgMaker = messageTypeMap[type] ?? () => new UnknownMessage()..code = type;
 
     ServerMessage msg = msgMaker();
-
     msg.readBytes(data);
-
     return msg;
   }
 }
@@ -106,8 +129,8 @@ class MessageFramer {
     var offsetIntoBytesRead = 0;
 
     do {
-      offsetIntoBytesRead += messageInProgress
-          .addBytes(new Uint8List.view(bytes.buffer, offsetIntoBytesRead));
+      var byteList = new Uint8List.view(bytes.buffer, offsetIntoBytesRead);
+      offsetIntoBytesRead += messageInProgress.addBytes(byteList);
 
       if (messageInProgress.isComplete) {
         messageQueue.add(messageInProgress);

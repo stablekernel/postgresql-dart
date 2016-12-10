@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:test/test.dart';
 import 'dart:typed_data';
 import 'package:postgres/src/postgresql_codec.dart';
+import 'package:postgres/src/utf8_backed_string.dart';
 
 void main() {
   test("Binary encode/decode inverse", () {
@@ -170,6 +171,17 @@ void main() {
         "TRUE");
     expect(PostgreSQLCodec.encode(false, dataType: PostgreSQLDataType.boolean),
         "FALSE");
+  });
+
+  test("UTF8String caches string regardless of which method is called first", () {
+    var u = new UTF8BackedString("abcd");
+    var v = new UTF8BackedString("abcd");
+
+    u.utf8Length;
+    v.utf8Bytes;
+
+    expect(u.hasCachedBytes, true);
+    expect(v.hasCachedBytes, true);
   });
 }
 

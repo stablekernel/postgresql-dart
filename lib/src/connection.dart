@@ -354,10 +354,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     // as soon as a close occurs, we detach the data stream from anything that actually does
     // anything with that data.
     _framer.addBytes(bytes);
-
     while (_framer.hasMessage) {
       var msg = _framer.popMessage().message;
-
       try {
         if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));

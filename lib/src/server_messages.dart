@@ -210,6 +210,25 @@ class UnknownMessage extends ServerMessage {
   }
 
   String toString() => "Unknown message: $code $bytes";
+
+  @override
+  operator ==(dynamic other) {
+    if (bytes != null) {
+      if (bytes.length != other.bytes.length) {
+        return false;
+      }
+      for (var i = 0; i < bytes.length; i++) {
+        if (bytes[i] != other.bytes[i]) {
+          return false;
+        }
+      }
+    } else {
+      if (other.bytes != null) {
+        return false;
+      }
+    }
+    return code == other.code;
+  }
 }
 
 class ErrorField {

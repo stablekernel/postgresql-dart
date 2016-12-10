@@ -5,6 +5,8 @@ class UTF8BackedString {
 
   List<int> _cachedUTF8Bytes;
 
+  bool get hasCachedBytes => _cachedUTF8Bytes != null;
+
   final String string;
 
   int get utf8Length {
