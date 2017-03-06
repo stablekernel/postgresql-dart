@@ -241,7 +241,7 @@ class FieldDescription {
 typedef String SQLReplaceIdentifierFunction(
     PostgreSQLFormatIdentifier identifier, int index);
 
-enum PostgreSQLFormatTokenType { text, marker }
+enum PostgreSQLFormatTokenType { text, variable }
 
 class PostgreSQLFormatToken {
   PostgreSQLFormatToken(this.type);
@@ -261,7 +261,8 @@ class PostgreSQLFormatIdentifier {
     "boolean": PostgreSQLCodec.TypeBool,
     "date": PostgreSQLCodec.TypeDate,
     "timestamp": PostgreSQLCodec.TypeTimestamp,
-    "timestamptz": PostgreSQLCodec.TypeTimestampTZ
+    "timestamptz": PostgreSQLCodec.TypeTimestampTZ,
+    "jsonb": PostgreSQLCodec.TypeJSONB
   };
 
   static int postgresCodeForDataTypeString(String dt) {
@@ -269,13 +270,18 @@ class PostgreSQLFormatIdentifier {
   }
 
   PostgreSQLFormatIdentifier(String t) {
-    var components = t.split(":");
-    if (components.length == 1) {
-      name = components.first;
-    } else if (components.length == 2) {
-      name = components.first;
+    var components = t.split("::");
+    if (components.length > 1) {
+      typeCast = components.sublist(1).join("");
+    }
 
-      var dataTypeString = components.last;
+    var variableComponents = components.first.split(":");
+    if (variableComponents.length == 1) {
+      name = variableComponents.first;
+    } else if (variableComponents.length == 2) {
+      name = variableComponents.first;
+
+      var dataTypeString = variableComponents.last;
       if (dataTypeString != null) {
         typeCode = postgresCodeForDataTypeString(dataTypeString);
       }
@@ -286,8 +292,10 @@ class PostgreSQLFormatIdentifier {
 
     // Strip @
     name = name.substring(1, name.length);
+
   }
 
   String name;
   int typeCode;
+  String typeCast;
 }

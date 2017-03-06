@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'query.dart';
 import 'constants.dart';
 import 'package:crypto/crypto.dart';
+import 'dart:convert';
 
 abstract class ClientMessage {
   static const int FormatText = 0;
@@ -295,6 +296,7 @@ class BindMessage extends ClientMessage {
       } else {
         buffer.setInt32(offset, p.length);
         offset += 4;
+
         offset = p.bytes.fold(offset, (inOffset, byte) {
           buffer.setUint8(inOffset, byte);
           return inOffset + 1;
