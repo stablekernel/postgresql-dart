@@ -41,12 +41,12 @@ void main() {
   });
 
   test("PostgreSQL typecast appears in query", () {
-    var results = PostgreSQLFormat.substitute("SELECT * FROM t WHERE id=@id:int2 AND blob=@blob::jsonb", {
+    var results = PostgreSQLFormat.substitute("SELECT * FROM t WHERE id=@id:int2 WHERE blob=@blob::jsonb AND blob='{\"a\":1}'::jsonb", {
       "id": 2,
       "blob": "{\"key\":\"value\"}"
     });
 
-    expect(results, "SELECT * FROM t WHERE id=2 AND blob='{\"key\":\"value\"}'::jsonb");
+    expect(results, "SELECT * FROM t WHERE id=2 WHERE blob='{\"key\":\"value\"}'::jsonb AND blob='{\"a\":1}'::jsonb");
   });
 
   test("String identifiers get escaped", () {
