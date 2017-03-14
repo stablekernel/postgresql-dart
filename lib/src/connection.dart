@@ -1,6 +1,8 @@
 library postgres.connection;
 
 import 'dart:async';
+import 'dart:typed_data';
+
 import 'message_window.dart';
 import 'query.dart';
 
@@ -152,22 +154,19 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     }
 
     _hasConnectedPreviously = true;
-
-    if (useSSL) {
-      _socket = await SecureSocket
-          .connect(host, port)
-          .timeout(new Duration(seconds: timeoutInSeconds));
-    } else {
-      _socket = await Socket
-          .connect(host, port)
-          .timeout(new Duration(seconds: timeoutInSeconds));
-    }
+    _socket = await Socket
+        .connect(host, port)
+        .timeout(new Duration(seconds: timeoutInSeconds));
 
     _framer = new MessageFramer();
+    var connectionComplete = new Completer();
+    if (useSSL) {
+      _socket = await _upgradeSocketToSSL(_socket);
+    }
+
     _socket.listen(_readData,
         onError: _handleSocketError, onDone: _handleSocketClosed);
 
-    var connectionComplete = new Completer();
     _transitionToState(
         new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
@@ -379,6 +378,38 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
     _cancelCurrentQueries();
+  }
+
+  Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
+      {int timeout: 30}) async {
+    var sslCompleter = new Completer<int>();
+
+    originalSocket.listen((data) {
+      if (data.length != 1) {
+        sslCompleter.completeError(new PostgreSQLException(
+            "Could not initalize SSL connection, received unknown byte stream."));
+        return;
+      }
+
+      sslCompleter.complete(data.first);
+    },
+        onDone: () => sslCompleter.completeError(new PostgreSQLException(
+            "Could not initialize SSL connection, connection closed during handshake.")),
+        onError: (err) => sslCompleter.completeError(err));
+
+    var byteBuffer = new ByteData(8);
+    byteBuffer.setUint32(0, 8);
+    byteBuffer.setUint32(4, 80877103);
+    originalSocket.add(byteBuffer.buffer.asUint8List());
+
+    var responseByte = await sslCompleter.future;
+    if (responseByte == 83) {
+      return SecureSocket
+          .secure(originalSocket, onBadCertificate: (certificate) => true)
+          .timeout(new Duration(seconds: timeout));
+    }
+
+    throw new PostgreSQLException("Could not initialize SSL connection.");
   }
 
   void _cacheQuery(Query query) {
