@@ -568,8 +568,13 @@ void main() {
         await conn.execute("select 1");
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("closed or query cancelled"));
+        expect(e.message, contains("but connection is not open"));
       }
+
+      try {
+        await conn.open();
+        expect(true, false);
+      } on PostgreSQLException {}
     });
   });
 
@@ -579,7 +584,9 @@ void main() {
       try {
         await conn.open();
         expect(true, false);
-      } on PostgreSQLException {}
+      } on PostgreSQLException catch (e) {
+        expect(e.message, contains("SSL not allowed"));
+      }
     });
   });
 }

@@ -159,10 +159,11 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
         .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
 
     _framer = new MessageFramer();
-    var connectionComplete = new Completer();
     if (useSSL) {
       _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
     }
+
+    var connectionComplete = new Completer();
 
     _socket.listen(_readData,
         onError: _handleSocketError, onDone: _handleSocketClosed);
@@ -412,7 +413,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
           .timeout(new Duration(seconds: timeout), onTimeout: _timeout);
     }
 
-    throw new PostgreSQLException("Could not initialize SSL connection.");
+    throw new PostgreSQLException("SSL not allowed for this connection.");
   }
 
   void _cacheQuery(Query query) {
