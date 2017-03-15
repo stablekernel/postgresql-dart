@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'dart:io';
 import 'server_messages.dart';
-import 'dart:math';
 
 class MessageFrame {
   static const int HeaderByteSize = 5;
