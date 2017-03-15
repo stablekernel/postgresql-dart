@@ -398,7 +398,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     },
         onDone: () => sslCompleter.completeError(new PostgreSQLException(
             "Could not initialize SSL connection, connection closed during handshake.")),
-        onError: (err) => sslCompleter.completeError(err));
+        onError: (err) {
+          sslCompleter.completeError(err);
+        });
 
     var byteBuffer = new ByteData(8);
     byteBuffer.setUint32(0, 8);

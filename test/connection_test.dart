@@ -577,19 +577,6 @@ void main() {
       } on PostgreSQLException {}
     });
   });
-
-  group("SSL cases", () {
-    test("Disallowed ssl fails to connect", () async {
-      var conn = new PostgreSQLConnection("localhost", 5432, "no_ssl_allowed",
-          useSSL: true);
-      try {
-        await conn.open();
-        expect(true, false);
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("SSL not allowed"));
-      }
-    });
-  });
 }
 
 Future expectConnectionIsInvalid(PostgreSQLConnection conn) async {
