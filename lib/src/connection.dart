@@ -405,8 +405,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     byteBuffer.setUint32(4, 80877103);
     originalSocket.add(byteBuffer.buffer.asUint8List());
 
-    var responseByte = await sslCompleter
-        .future.timeout(new Duration(seconds: timeout), onTimeout: _timeout);
+    var responseByte = await sslCompleter.future
+        .timeout(new Duration(seconds: timeout), onTimeout: _timeout);
     if (responseByte == 83) {
       return SecureSocket
           .secure(originalSocket, onBadCertificate: (certificate) => true)

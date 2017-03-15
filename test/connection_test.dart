@@ -29,7 +29,7 @@ void main() {
 
       expect(await conn.execute("select 1"), equals(1));
       var socketMirror = reflect(conn).type.declarations.values.firstWhere(
-              (DeclarationMirror dm) =>
+          (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
       var underlyingSocket =
           reflect(conn).getField(socketMirror.simpleName).reflectee;
@@ -580,7 +580,8 @@ void main() {
 
   group("SSL cases", () {
     test("Disallowed ssl fails to connect", () async {
-      var conn = new PostgreSQLConnection("localhost", 5432, "no_ssl_allowed", useSSL: true);
+      var conn = new PostgreSQLConnection("localhost", 5432, "no_ssl_allowed",
+          useSSL: true);
       try {
         await conn.open();
         expect(true, false);

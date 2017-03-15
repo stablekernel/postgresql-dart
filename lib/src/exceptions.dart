@@ -136,5 +136,5 @@ class PostgreSQLException implements Exception {
 
     return buff.toString();
   }
-   //   "$severity $code: $message Detail: $detail Hint: $hint Table: $tableName Column: $columnName Constraint: $constraintName";
+  //   "$severity $code: $message Detail: $detail Hint: $hint Table: $tableName Column: $columnName Constraint: $constraintName";
 }
