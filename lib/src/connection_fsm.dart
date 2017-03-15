@@ -68,10 +68,8 @@ class _PostgreSQLConnectionStateSocketConnected
 
     // Pass on the pending op to subsequent stages
     if (authMessage.type == AuthenticationMessage.KindOK) {
-      print("Will not send password");
       return new _PostgreSQLConnectionStateAuthenticated(completer);
     } else if (authMessage.type == AuthenticationMessage.KindMD5Password) {
-      print("Will send password");
       connection._salt = authMessage.salt;
 
       return new _PostgreSQLConnectionStateAuthenticating(completer);
