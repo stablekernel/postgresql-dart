@@ -123,15 +123,15 @@ class PostgreSQLException implements Exception {
     }
 
     if (tableName != null) {
-      buff.write("Table: $tableName");
+      buff.write("Table: $tableName ");
     }
 
     if (columnName != null) {
-      buff.write("Column: $columnName");
+      buff.write("Column: $columnName ");
     }
 
     if (constraintName != null) {
-      buff.write("Constraint $constraintName");
+      buff.write("Constraint $constraintName ");
     }
 
     return buff.toString();
