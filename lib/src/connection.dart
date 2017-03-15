@@ -156,12 +156,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _hasConnectedPreviously = true;
     _socket = await Socket
         .connect(host, port)
-        .timeout(new Duration(seconds: timeoutInSeconds));
+        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
 
     _framer = new MessageFramer();
     var connectionComplete = new Completer();
     if (useSSL) {
-      _socket = await _upgradeSocketToSSL(_socket);
+      _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
     }
 
     _socket.listen(_readData,
@@ -171,14 +171,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
         new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
     return connectionComplete.future
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: () {
-      _connectionState = new _PostgreSQLConnectionStateClosed();
-      _socket?.destroy();
-
-      _cancelCurrentQueries();
-      throw new PostgreSQLException(
-          "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
-    });
+        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
   }
 
   /// Closes a connection.
@@ -297,6 +290,15 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
   ////////
 
+  void _timeout() {
+    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _socket?.destroy();
+
+    _cancelCurrentQueries();
+    throw new PostgreSQLException(
+        "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
+  }
+
   Future<dynamic> _enqueue(Query query) async {
     _queryQueue.add(query);
     _transitionToState(_connectionState.awake());
@@ -406,7 +408,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     if (responseByte == 83) {
       return SecureSocket
           .secure(originalSocket, onBadCertificate: (certificate) => true)
-          .timeout(new Duration(seconds: timeout));
+          .timeout(new Duration(seconds: timeout), onTimeout: _timeout);
     }
 
     throw new PostgreSQLException("Could not initialize SSL connection.");

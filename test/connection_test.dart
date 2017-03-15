@@ -28,6 +28,12 @@ void main() {
       await conn.open();
 
       expect(await conn.execute("select 1"), equals(1));
+      var socketMirror = reflect(conn).type.declarations.values.firstWhere(
+              (DeclarationMirror dm) =>
+              dm.simpleName.toString().contains("_socket"));
+      var underlyingSocket =
+          reflect(conn).getField(socketMirror.simpleName).reflectee;
+      expect(underlyingSocket is SecureSocket, true);
     });
 
     test("Connect with no auth required", () async {
