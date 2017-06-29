@@ -27,7 +27,7 @@ void main() {
                    "NOTIFY $channel, '$payload';");
 
       var msg = await futureMsg
-          .timeout(new Duration(seconds: 1));
+          .timeout(new Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, payload);
     });
@@ -40,7 +40,7 @@ void main() {
                    "NOTIFY $channel;");
 
       var msg = await futureMsg
-          .timeout(new Duration(seconds: 1));
+          .timeout(new Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, '');
     });
@@ -54,7 +54,7 @@ void main() {
           "NOTIFY $channel, '$payload';");
 
       var msg = await futureMsg
-          .timeout(new Duration(seconds: 1));
+          .timeout(new Duration(milliseconds: 200));
 
       expect(msg.channel, channel);
       expect(msg.payload, payload);
@@ -69,7 +69,7 @@ void main() {
             .execute("NOTIFY $channel, '$payload';");
 
         await futureMsg
-            .timeout(new Duration(seconds: 1));
+            .timeout(new Duration(milliseconds: 200));
 
         fail('There should be no notification');
       } on TimeoutException catch (e) {}
@@ -115,10 +115,10 @@ void main() {
       await notifier();
 
       await finishExecute.future
-          .timeout(new Duration(seconds: 1));
+          .timeout(new Duration(milliseconds: 200));
 
       expect(countResponse[channel1], 10);
       expect(countResponse[channel2], 10);
-    });
+    }, timeout: new Timeout(new Duration(seconds: 5)));
   });
 }
