@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:typed_data';
 import 'dart:convert';
 import 'connection.dart';
@@ -134,15 +136,25 @@ class DataRowMessage extends ServerMessage {
 }
 
 class NotificationResponseMessage extends ServerMessage {
-  int processId;
+  int processID;
   String channel;
   String payload;
 
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
-    processId = view.getUint32(0);
-    channel = UTF8.decode(bytes.sublist(4, bytes.indexOf(0, 4)));
-    payload = UTF8.decode(bytes.sublist(bytes.indexOf(0, 4) + 1, bytes.lastIndexOf(0)));
+    var processIDView = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+
+    var results = <String>[];
+    var controller = new StreamController<String>(sync: true);
+    controller.stream.listen(results.add);
+
+    var sink = UTF8.decoder.startChunkedConversion(controller.sink);
+    sink.addSlice(bytes, 4, bytes.indexOf(0, 4), false);
+    sink.addSlice(bytes, bytes.indexOf(0, 4) + 1, bytes.lastIndexOf(0), true);
+
+    processID = processIDView.getUint32(0);
+    channel = results[0];
+    if(results.length > 1)
+      payload = results[1];
   }
 }
 

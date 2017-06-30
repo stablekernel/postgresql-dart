@@ -187,6 +187,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
     await _socket?.close();
 
+    await _notifications.close();
+
     _cancelCurrentQueries();
   }
 
@@ -365,6 +367,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       try {
         if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));
+        } else if (msg is NotificationResponseMessage) {
+            _notifications.add(
+                new Notification(msg.processID, msg.channel, msg.payload));
         } else {
           _transitionToState(_connectionState.onMessage(msg));
         }

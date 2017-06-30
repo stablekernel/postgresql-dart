@@ -42,7 +42,7 @@ void main() {
       var msg = await futureMsg
           .timeout(new Duration(milliseconds: 200));
       expect(msg.channel, channel);
-      expect(msg.payload, '');
+      expect(msg.payload, null);
     });
 
     test("Notification UNLISTEN", () async {

@@ -12,17 +12,6 @@ abstract class _PostgreSQLConnectionState {
   }
 
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
-    if (message is NotificationResponseMessage) {
-      connection._notifications.add(
-          new Notification(
-              message.processId, message.channel, message.payload));
-      return this;
-    }
-
-    return _onMessage(message);
-  }
-
-  _PostgreSQLConnectionState _onMessage(ServerMessage message) {
     return this;
   }
 
@@ -74,7 +63,7 @@ class _PostgreSQLConnectionStateSocketConnected
     return new _PostgreSQLConnectionStateClosed();
   }
 
-  _PostgreSQLConnectionState _onMessage(ServerMessage message) {
+  _PostgreSQLConnectionState onMessage(ServerMessage message) {
     AuthenticationMessage authMessage = message;
 
     // Pass on the pending op to subsequent stages
@@ -121,7 +110,7 @@ class _PostgreSQLConnectionStateAuthenticating
     return new _PostgreSQLConnectionStateClosed();
   }
 
-  _PostgreSQLConnectionState _onMessage(ServerMessage message) {
+  _PostgreSQLConnectionState onMessage(ServerMessage message) {
     if (message is ParameterStatusMessage) {
       connection.settings[message.name] = message.value;
     } else if (message is BackendKeyMessage) {
@@ -155,7 +144,7 @@ class _PostgreSQLConnectionStateAuthenticated
     return new _PostgreSQLConnectionStateClosed();
   }
 
-  _PostgreSQLConnectionState _onMessage(ServerMessage message) {
+  _PostgreSQLConnectionState onMessage(ServerMessage message) {
     if (message is ParameterStatusMessage) {
       connection.settings[message.name] = message.value;
     } else if (message is BackendKeyMessage) {
@@ -243,7 +232,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     return this;
   }
 
-  _PostgreSQLConnectionState _onMessage(ServerMessage message) {
+  _PostgreSQLConnectionState onMessage(ServerMessage message) {
     // We ignore NoData, as it doesn't tell us anything we don't already know
     // or care about.
 
