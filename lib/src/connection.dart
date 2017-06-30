@@ -79,6 +79,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _connectionState.connection = this;
   }
 
+  final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
   // Add flag for debugging that captures stack trace prior to execution
 
   /// Hostname of database this connection refers to.
@@ -104,6 +105,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
   /// The timezone of this connection for date operations that don't specify a timezone.
   String timeZone;
+
+  /// The notifications from the database
+  Stream<Notification> get notifications => _notifications.stream;
 
   /// Whether or not this connection is open or not.
   ///
@@ -182,6 +186,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
     await _socket?.close();
+
+    await _notifications.close();
 
     _cancelCurrentQueries();
   }
@@ -361,6 +367,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       try {
         if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));
+        } else if (msg is NotificationResponseMessage) {
+            _notifications.add(
+                new Notification(msg.processID, msg.channel, msg.payload));
         } else {
           _transitionToState(_connectionState.onMessage(msg));
         }

@@ -204,10 +204,6 @@ class _PostgreSQLConnectionStateIdle extends _PostgreSQLConnectionState {
 
     return awake();
   }
-
-  _PostgreSQLConnectionState onMessage(ServerMessage message) {
-    return this;
-  }
 }
 
 /*
