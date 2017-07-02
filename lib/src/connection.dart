@@ -80,7 +80,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
-  // Add flag for debugging that captures stack trace prior to execution
 
   /// Hostname of database this connection refers to.
   String host;
@@ -109,7 +108,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// The processID of this backend.
   int processID;
 
-  /// Listen for notifications from the
+  /// Stream of notification from the database.
+  ///
+  /// Listen to this [Stream] to receive events from PostgreSQL NOTIFY commands.
+  ///
+  /// To determine whether or not the NOTIFY came from this instance, compare [processID]
+  /// to [Notification.processID].
   Stream<Notification> get notifications => _notifications.stream;
 
   /// Whether or not this connection is open or not.
