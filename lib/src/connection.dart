@@ -333,6 +333,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   void _cancelCurrentQueries([Object error, StackTrace stackTrace]) {
+    error ??= "Cancelled";
     var queries = _queryQueue;
     _queryQueue = [];
 
