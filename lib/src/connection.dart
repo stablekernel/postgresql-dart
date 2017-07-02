@@ -477,3 +477,20 @@ class _TransactionRollbackException implements Exception {
 
   String reason;
 }
+
+/// Represents a notification from PostgreSQL.
+///
+/// Instances of this type are created and sent via [PostgreSQLConnection.notifications].
+class Notification {
+  /// Creates an instance of this type.
+  Notification(this.processID, this.channel, this.payload);
+
+  /// The backend ID from which the notification was generated.
+  final int processID;
+
+  /// The name of the PostgreSQL channel that this notification occurred on.
+  final String channel;
+
+  /// An optional data payload accompanying this notification.
+  final String payload;
+}
