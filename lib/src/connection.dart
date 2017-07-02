@@ -109,7 +109,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// The processID of this backend.
   int processID;
 
-  /// The notifications from the database
+  /// Listen for notifications from the
   Stream<Notification> get notifications => _notifications.stream;
 
   /// Whether or not this connection is open or not.
@@ -189,9 +189,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
     await _socket?.close();
 
-    await _notifications.close();
-
     _cancelCurrentQueries();
+
+    return _cleanup();
   }
 
   /// Executes a query on this connection.
@@ -304,6 +304,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _socket?.destroy();
 
     _cancelCurrentQueries();
+    _cleanup();
     throw new PostgreSQLException(
         "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
   }
@@ -386,12 +387,14 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _socket.destroy();
 
     _cancelCurrentQueries(error, stack);
+    _cleanup();
   }
 
   void _handleSocketClosed() {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
     _cancelCurrentQueries();
+    _cleanup();
   }
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
@@ -458,6 +461,10 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _reuseCounter++;
 
     return string;
+  }
+
+  Future _cleanup() async {
+    await _notifications.close();
   }
 }
 
