@@ -14,6 +14,94 @@ part 'connection_fsm.dart';
 part 'transaction_proxy.dart';
 part 'exceptions.dart';
 
+abstract class Connection {
+  /// Executes a query on this context.
+  ///
+  /// This method sends the query described by [fmtString] to the database and returns a [Future] whose value is the returned rows from the query after the query completes.
+  /// The format string may contain parameters that are provided in [substitutionValues]. Parameters are prefixed with the '@' character. Keys to replace the parameters
+  /// do not include the '@' character. For example:
+  ///
+  ///         connection.query("SELECT * FROM table WHERE id = @idParam", {"idParam" : 2});
+  ///
+  /// The type of the value is inferred by default, but can be made more specific by adding ':type" to the parameter pattern in the format string. The possible values
+  /// are declared as static variables in [PostgreSQLCodec] (e.g., [PostgreSQLCodec.TypeInt4]). For example:
+  ///
+  ///         connection.query("SELECT * FROM table WHERE id = @idParam:int4", {"idParam" : 2});
+  ///
+  /// You may also use [PostgreSQLFormat.id] to create parameter patterns.
+  ///
+  /// If successful, the returned [Future] completes with a [List] of rows. Each is row is represented by a [List] of column values for that row that were returned by the query.
+  ///
+  /// By default, instances of this class will reuse queries. This allows significantly more efficient transport to and from the database. You do not have to do
+  /// anything to opt in to this behavior, this connection will track the necessary information required to reuse queries without intervention. (The [fmtString] is
+  /// the unique identifier to look up reuse information.) You can disable reuse by passing false for [allowReuse].
+  Future<List<List<dynamic>>> query(String fmtString,
+      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true});
+
+  /// Executes a query on this context.
+  ///
+  /// This method sends a SQL string to the database this instance is connected to. Parameters can be provided in [fmtString], see [query] for more details.
+  ///
+  /// This method returns the number of rows affected and no additional information. This method uses the least efficient and less secure command
+  /// for executing queries in the PostgreSQL protocol; [query] is preferred for queries that will be executed more than once, will contain user input,
+  /// or return rows.
+  Future<int> execute(String fmtString,
+      {Map<String, dynamic> substitutionValues: null});
+
+  /// Executes a series of queries inside a transaction on this connection.
+  ///
+  /// Queries executed inside [queryBlock] will be grouped together in a transaction. The return value of the [queryBlock]
+  /// will be the wrapped in the [Future] returned by this method if the transaction completes successfully.
+  ///
+  /// If a query or execution fails - for any reason - within a transaction block,
+  /// the transaction will fail and previous statements within the transaction will not be committed. The [Future]
+  /// returned from this method will be completed with the error from the first failing query.
+  ///
+  /// Do not catch exceptions within a transaction block, as it will prevent the transaction exception handler from fulfilling a
+  /// transaction.
+  ///
+  /// Transactions may be cancelled by issuing [PostgreSQLExecutionContext.cancelTransaction]
+  /// within the transaction. This will cause this method to return a [Future] with a value of [PostgreSQLRollback]. This method does not throw an exception
+  /// if the transaction is cancelled in this way.
+  ///
+  /// All queries within a transaction block must be executed using the [PostgreSQLExecutionContext] passed into the [queryBlock].
+  /// You must not issue queries to the receiver of this method from within the [queryBlock], otherwise the connection will deadlock.
+  ///
+  /// Queries within a transaction may be executed asynchronously or be awaited on. The order is still guaranteed. Example:
+  ///
+  ///         connection.transaction((ctx) {
+  ///           var rows = await ctx.query("SELECT id FROM t);
+  ///           if (!rows.contains([2])) {
+  ///             ctx.query("INSERT INTO t (id) VALUES (2)");
+  ///           }
+  ///         });
+  Future<dynamic> transaction(
+      Future<dynamic> queryBlock(PostgreSQLExecutionContext connection));
+  /// Cancels a transaction on this context.
+  ///
+  /// If this context is an instance of [PostgreSQLConnection], this method has no effect. If the context is a transaction context (passed as the argument
+  /// to [PostgreSQLConnection.transaction]), this will rollback the transaction.
+  void cancelTransaction({String reason: null});
+
+  /// Closes a connection.
+  ///
+  /// After the returned [Future] completes, this connection can no longer be used to execute queries. Any queries in progress or queued are cancelled.
+  Future close();
+
+  /// The processID of this backend.
+  int get processID;
+
+  /// The notifications from the database
+  Stream<Notification> get notifications;
+
+  /// Whether or not this connection is open or not.
+  ///
+  /// This is [true] when this instance is first created and after it has been closed or encountered an unrecoverable error.
+  /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a new instance
+  /// must be created.
+  bool get isClosed;
+}
+
 abstract class PostgreSQLExecutionContext {
   /// Executes a query on this context.
   ///
@@ -59,7 +147,7 @@ abstract class PostgreSQLExecutionContext {
 ///
 /// The primary type of this library, a connection is responsible for connecting to databases and executing queries.
 /// A connection may be opened with [open] after it is created.
-class PostgreSQLConnection implements PostgreSQLExecutionContext {
+class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
   /// Creates an instance of [PostgreSQLConnection].
   ///
   /// [host] must be a hostname, e.g. "foobar.com" or IP address. Do not include scheme or port.
