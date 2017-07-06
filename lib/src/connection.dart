@@ -168,7 +168,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
   }
 
   final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
-  // Add flag for debugging that captures stack trace prior to execution
 
   /// Hostname of database this connection refers to.
   String host;
@@ -197,7 +196,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
   /// The processID of this backend.
   int processID;
 
-  /// The notifications from the database
+  /// Stream of notification from the database.
+  ///
+  /// Listen to this [Stream] to receive events from PostgreSQL NOTIFY commands.
+  ///
+  /// To determine whether or not the NOTIFY came from this instance, compare [processID]
+  /// to [Notification.processID].
   Stream<Notification> get notifications => _notifications.stream;
 
   /// Whether or not this connection is open or not.
@@ -277,9 +281,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
 
     await _socket?.close();
 
-    await _notifications.close();
-
     _cancelCurrentQueries();
+
+    return _cleanup();
   }
 
   /// Executes a query on this connection.
@@ -392,6 +396,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
     _socket?.destroy();
 
     _cancelCurrentQueries();
+    _cleanup();
     throw new PostgreSQLException(
         "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
   }
@@ -416,6 +421,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
   }
 
   void _cancelCurrentQueries([Object error, StackTrace stackTrace]) {
+    error ??= "Cancelled";
     var queries = _queryQueue;
     _queryQueue = [];
 
@@ -474,12 +480,14 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
     _socket.destroy();
 
     _cancelCurrentQueries(error, stack);
+    _cleanup();
   }
 
   void _handleSocketClosed() {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
     _cancelCurrentQueries();
+    _cleanup();
   }
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
@@ -547,10 +555,31 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext, Connection {
 
     return string;
   }
+
+  Future _cleanup() async {
+    await _notifications.close();
+  }
 }
 
 class _TransactionRollbackException implements Exception {
   _TransactionRollbackException(this.reason);
 
   String reason;
+}
+
+/// Represents a notification from PostgreSQL.
+///
+/// Instances of this type are created and sent via [PostgreSQLConnection.notifications].
+class Notification {
+  /// Creates an instance of this type.
+  Notification(this.processID, this.channel, this.payload);
+
+  /// The backend ID from which the notification was generated.
+  final int processID;
+
+  /// The name of the PostgreSQL channel that this notification occurred on.
+  final String channel;
+
+  /// An optional data payload accompanying this notification.
+  final String payload;
 }
