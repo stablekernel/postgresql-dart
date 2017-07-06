@@ -4,8 +4,6 @@ import 'dart:async';
 import 'dart:collection';
 
 import 'package:postgres/postgres.dart';
-import 'package:postgres/src/server_messages.dart';
-
 
 class _PooledConnection implements Connection {
 
@@ -71,10 +69,9 @@ class _PooledConnection implements Connection {
   Future close() async {
     if(!_isClosed) {
       await _subscription.cancel();
-      _pool._releaseConnection(this);
+      _pool._releaseConnection(this._connection);
       _isClosed = true;
     }
-    return new Future.value(true);
   }
 }
 
@@ -140,8 +137,8 @@ class ConnectionPool {
   /// Maximum wait time between attempts to restore connections
   final Duration maxRetryDelay;
 
-  final Queue<_PooledConnection> _availableConnections = new Queue<_PooledConnection>();
-  final Set<_PooledConnection> _busyConnections = new Set<_PooledConnection>();
+  final Queue<PostgreSQLConnection> _availableConnections = new Queue<PostgreSQLConnection>();
+  final Set<PostgreSQLConnection> _busyConnections = new Set<PostgreSQLConnection>();
   final Queue<Completer<_PooledConnection>> _waitQueue = new Queue<Completer<_PooledConnection>>();
   Timer _heartbeatTimer;
   Duration _currentRetryDelay;
@@ -181,7 +178,7 @@ class ConnectionPool {
     _heartbeatTimer?.cancel();
 
     while(_availableConnections.isNotEmpty) {
-      _PooledConnection connection = _availableConnections.removeFirst();
+      PostgreSQLConnection connection = _availableConnections.removeFirst();
       connection.close();
     }
   }
@@ -189,7 +186,7 @@ class ConnectionPool {
   Future _heartbeat() async {
     for (int i=0; i< _availableConnections.length; i++) {
       try {
-        _PooledConnection connection = _availableConnections.removeFirst();
+        PostgreSQLConnection connection = _availableConnections.removeFirst();
         await connection.execute("SELECT 1;");
         _availableConnections.addLast(connection);
       }
@@ -201,46 +198,53 @@ class ConnectionPool {
     }
   }
 
-  void _createConnections() {
-    scheduleMicrotask(() async {
-      try {
-        while(_availableConnections.length + _busyConnections.length < maxCountConnectionInPool) {
-            PostgreSQLConnection newConnection = new PostgreSQLConnection(
-                host, port,
-                databaseName, username: username,
-                password: password,
-                timeoutInSeconds: timeoutInSeconds,
-                timeZone: timeZone,
-                useSSL: useSSL);
-            await newConnection.open();
-            _addInAvailable(new _PooledConnection._internal(this, newConnection));
-        }
-        _resetRetryState();
-        _creatingConnections = false;
-      }
-      catch (_){
-        _creatingConnections = true;
-        Duration retryDelay = _getRetryDelay();
-        await new Future.delayed(retryDelay);
-        _createConnections();
-      }
-    });
+  Future _createConnections() async {
+    try {
+      var countRequiredConnection = maxCountConnectionInPool -
+          (_availableConnections.length + _busyConnections.length);
+      if(countRequiredConnection <= 0)
+        return;
+
+      await Future.wait(new List.generate(countRequiredConnection, (_) {
+        return _createConnection();
+      }));
+      _resetRetryState();
+      _creatingConnections = false;
+    }
+    catch (_){
+      _creatingConnections = true;
+      Duration retryDelay = _getRetryDelay();
+      await new Future.delayed(retryDelay);
+      _createConnections();
+    }
   }
 
-  void _addInAvailable(_PooledConnection _connection) {
+  Future _createConnection() async {
+    PostgreSQLConnection newConnection = new PostgreSQLConnection(
+        host, port,
+        databaseName, username: username,
+        password: password,
+        timeoutInSeconds: timeoutInSeconds,
+        timeZone: timeZone,
+        useSSL: useSSL);
+    await newConnection.open();
+    _addInAvailable(newConnection);
+  }
+
+  void _addInAvailable(PostgreSQLConnection _connection) {
     _availableConnections.addLast(_connection);
     while(_availableConnections.isNotEmpty && _waitQueue.isNotEmpty) {
-      _PooledConnection connection = _getConnection();
+      PostgreSQLConnection connection = _getConnection();
       if(connection == null) {
         break;
       }
 
       Completer<_PooledConnection> completer = _waitQueue.removeFirst();
-      completer.complete(connection);
+      completer.complete(new _PooledConnection._internal(this, connection));
     }
   }
 
-  _PooledConnection _getConnection() {
+  PostgreSQLConnection _getConnection() {
     if(_availableConnections.isEmpty)
       return null;
 
@@ -249,7 +253,7 @@ class ConnectionPool {
     return connection;
   }
 
-  void _releaseConnection(_PooledConnection connection) {
+  void _releaseConnection(PostgreSQLConnection connection) {
     _busyConnections.remove(connection);
 
     if(connection.isClosed) {

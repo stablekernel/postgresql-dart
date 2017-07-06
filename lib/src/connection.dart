@@ -91,7 +91,12 @@ abstract class Connection {
   /// The processID of this backend.
   int get processID;
 
-  /// The notifications from the database
+  /// Stream of notification from the database.
+  ///
+  /// Listen to this [Stream] to receive events from PostgreSQL NOTIFY commands.
+  ///
+  /// To determine whether or not the NOTIFY came from this instance, compare [processID]
+  /// to [Notification.processID].
   Stream<Notification> get notifications;
 
   /// Whether or not this connection is open or not.
