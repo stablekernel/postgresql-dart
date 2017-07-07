@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
@@ -20,25 +22,27 @@ void main() {
     });
 
     test("Pool connection one connection", () async {
-      //expect(await pool.connection.execute("select 1"), equals(1));
+      expect(await pool.connection.execute("select 1"), equals(1));
     });
 
-    test("Pool connection more max connection", () async {
-//      List<Connection> connections = new List<Connection>();
-//      for(int i = 0; i< maxConnection;i++) {
-//        connections.add(await pool.getConnection());
-//      }
-//
-//      bool isTimeout = false;
-//      try {
-//        await pool.getConnection(timeout: new Duration(seconds: 1));
-//      }
-//      catch (_) {
-//        isTimeout = true;
-//      }
-//      expect(isTimeout, true);
-//      for(var connection in connections)
-//        connection.close();
+    test("Pool connection recreation", () async {
+      for(int i=0; i < 20; i++ ) {
+        var connection = pool.connection;
+        expect(await connection.execute("select 1"), equals(1));
+        await connection.close();
+      }
+    });
+    test("Pool connection many quaryes", () async {
+      var queryes = new List<Future>();
+      for(int i=0; i < 20; i++ ) {
+        var connection = pool.connection;
+        queryes.add(connection.query("select $i"));
+      }
+      await Future.wait(queryes);
+      for(int i=0; i < 20; i++ ) {
+        var result = await queryes[i];
+        expect(result.first.first, i);
+      }
     });
   });
 }
