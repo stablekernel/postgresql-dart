@@ -80,6 +80,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
+  final Completer _done = new Completer();
 
   /// Hostname of database this connection refers to.
   String host;
@@ -128,6 +129,9 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// After connecting to a database, this map will contain the settings values that the database returns.
   /// Prior to connection, it is the empty map.
   Map<String, String> settings = {};
+
+  ///This completed when connection closed
+  Future get done => _done.future;
 
   Socket _socket;
   MessageFramer _framer = new MessageFramer();
@@ -222,10 +226,13 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Future<List<List<dynamic>>> query(String fmtString,
       {Map<String, dynamic> substitutionValues: null,
       bool allowReuse: true}) async {
-    if (isClosed) {
+    if (_done.isCompleted) {
       throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          "Attempting to execute query, but connection is closed.");
     }
+
+    if(isClosed && !_hasConnectedPreviously)
+      await open();
 
     var query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, this, null);
@@ -245,10 +252,13 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// or return rows.
   Future<int> execute(String fmtString,
       {Map<String, dynamic> substitutionValues: null}) async {
-    if (isClosed) {
+    if (_done.isCompleted) {
       throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          "Attempting to execute query, but connection is closed.");
     }
+
+    if(isClosed && !_hasConnectedPreviously)
+      await open();
 
     var query = new Query<int>(fmtString, substitutionValues, this, null)
       ..onlyReturnAffectedRowCount = true;
@@ -285,10 +295,13 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///         });
   Future<dynamic> transaction(
       Future<dynamic> queryBlock(PostgreSQLExecutionContext connection)) async {
-    if (isClosed) {
+    if (_done.isCompleted) {
       throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          "Attempting to execute query, but connection is closed.");
     }
+
+    if(isClosed && !_hasConnectedPreviously)
+      await open();
 
     var proxy = new _TransactionProxy(this, queryBlock);
 
@@ -469,6 +482,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   Future _cleanup() async {
+    if(!_done.isCompleted)
+      _done.complete();
     await _notifications.close();
   }
 }
@@ -494,4 +509,67 @@ class Notification {
 
   /// An optional data payload accompanying this notification.
   final String payload;
+}
+
+class PostgreSQLConnectionPool {
+  PostgreSQLConnectionPool(this.size, this.host, this.port, this.databaseName,
+      {this.username: null,
+        this.password: null,
+        this.timeoutInSeconds: 30,
+        this.timeZone: "UTC",
+        this.useSSL: false});
+
+  final int size;
+  final String host;
+  final int port;
+  final String databaseName;
+  final String username;
+  final String password;
+  final int timeoutInSeconds;
+  final String timeZone;
+  final bool useSSL;
+
+  var _connections = new Map<PostgreSQLConnection, StreamSubscription>();
+
+  PostgreSQLConnection get connection {
+    if(_connections.length == 0) {
+      throw new PostgreSQLException(
+          "Attempting to get connection, but pool is not open.");
+    }
+    PostgreSQLConnection selectedConnection = _connections.keys.first;
+    int maxLengthQueryQueue() => selectedConnection._queryQueue.length;
+    for(var connection in _connections.keys.skip(1))
+      if(connection._queryQueue.length < maxLengthQueryQueue()) {
+        selectedConnection = connection;
+      }
+      return selectedConnection;
+  }
+
+  Future open() async {
+    for(int i = 0; i < size; i++) {
+      _createConnection();
+    }
+    await Future.forEach(_connections.keys, (connection) => connection.open());
+  }
+
+  void _createConnection()
+  {
+    var connection =new PostgreSQLConnection(host, port, databaseName,
+        username: username,
+        password: password,
+        timeoutInSeconds: timeoutInSeconds,
+        timeZone: timeZone,
+        useSSL: useSSL);
+    StreamSubscription subscription = connection.done.asStream().listen((_){
+      _connections.remove(connection);
+      _createConnection();
+    });
+    _connections[connection] = subscription;
+  }
+
+  Future close() async {
+    await Future.forEach(_connections.values, (subscription) => subscription.cancel());
+    await Future.forEach(_connections.keys, (connection) => connection.close());
+    _connections.clear();
+  }
 }
