@@ -117,12 +117,10 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// to [Notification.processID].
   Stream<Notification> get notifications => _notifications.stream;
 
-  /// Whether or not this connection is open or not.
-  ///
-  /// This is [true] when this instance is first created and after it has been closed or encountered an unrecoverable error.
+  /// This is [true] when this instance it has been closed or encountered an unrecoverable error.
   /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a new instance
   /// must be created.
-  bool get isClosed => _connectionState is _PostgreSQLConnectionStateClosed;
+  bool get isClosed => _done.isCompleted;
 
   /// Settings values from the connected database.
   ///
@@ -189,11 +187,16 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
         .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
   }
 
+  Future _open() async {
+    if(!_hasConnectedPreviously)
+      await open();
+  }
+
   /// Closes a connection.
   ///
   /// After the returned [Future] completes, this connection can no longer be used to execute queries. Any queries in progress or queued are cancelled.
   Future close() async {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
 
     await _socket?.close();
 
@@ -226,13 +229,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Future<List<List<dynamic>>> query(String fmtString,
       {Map<String, dynamic> substitutionValues: null,
       bool allowReuse: true}) async {
-    if (_done.isCompleted) {
+    if (isClosed) {
       throw new PostgreSQLException(
           "Attempting to execute query, but connection is closed.");
     }
 
-    if(isClosed && !_hasConnectedPreviously)
-      await open();
+    await _open();
 
     var query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, this, null);
@@ -252,13 +254,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// or return rows.
   Future<int> execute(String fmtString,
       {Map<String, dynamic> substitutionValues: null}) async {
-    if (_done.isCompleted) {
+    if (isClosed) {
       throw new PostgreSQLException(
           "Attempting to execute query, but connection is closed.");
     }
 
-    if(isClosed && !_hasConnectedPreviously)
-      await open();
+    await _open();
 
     var query = new Query<int>(fmtString, substitutionValues, this, null)
       ..onlyReturnAffectedRowCount = true;
@@ -295,13 +296,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///         });
   Future<dynamic> transaction(
       Future<dynamic> queryBlock(PostgreSQLExecutionContext connection)) async {
-    if (_done.isCompleted) {
+    if (isClosed) {
       throw new PostgreSQLException(
           "Attempting to execute query, but connection is closed.");
     }
 
-    if(isClosed && !_hasConnectedPreviously)
-      await open();
+    await _open();
 
     var proxy = new _TransactionProxy(this, queryBlock);
 
@@ -317,7 +317,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ////////
 
   void _timeout() {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
     _socket?.destroy();
 
     _cancelCurrentQueries();
@@ -401,7 +401,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   void _handleSocketError(Object error, StackTrace stack) {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
+
     _socket.destroy();
 
     _cancelCurrentQueries(error, stack);
@@ -409,7 +410,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   void _handleSocketClosed() {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
 
     _cancelCurrentQueries();
     _cleanup();
@@ -482,9 +483,13 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   Future _cleanup() async {
+    await _notifications.close();
+  }
+
+  void _close() {
+    _connectionState = new _PostgreSQLConnectionStateClosed();
     if(!_done.isCompleted)
       _done.complete();
-    await _notifications.close();
   }
 }
 
