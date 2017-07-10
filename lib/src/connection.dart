@@ -554,7 +554,7 @@ class PostgreSQLConnectionPool {
     for(int i = 0; i < size; i++) {
       _createConnection();
     }
-    await Future.forEach(_connections.keys, (connection) => connection.open());
+    await Future.wait(_connections.keys.map((connection) => connection.open()));
   }
 
   void _createConnection()
@@ -573,8 +573,8 @@ class PostgreSQLConnectionPool {
   }
 
   Future close() async {
-    await Future.forEach(_connections.values, (subscription) => subscription.cancel());
-    await Future.forEach(_connections.keys, (connection) => connection.close());
+    await Future.wait(_connections.values.map((connection) => connection.cancel()));
+    await Future.wait(_connections.keys.map((connection) => connection.close()));
     _connections.clear();
   }
 }
