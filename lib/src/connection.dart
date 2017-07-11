@@ -188,21 +188,20 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   Future _open() async {
-    if(!_hasConnectedPreviously)
+    if(!_hasConnectedPreviously) {
       await open();
+    }
   }
 
   /// Closes a connection.
   ///
   /// After the returned [Future] completes, this connection can no longer be used to execute queries. Any queries in progress or queued are cancelled.
   Future close() async {
-    _close();
+    await _close();
 
     await _socket?.close();
 
     _cancelCurrentQueries();
-
-    return _cleanup();
   }
 
   /// Executes a query on this connection.
@@ -321,7 +320,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _socket?.destroy();
 
     _cancelCurrentQueries();
-    _cleanup();
     throw new PostgreSQLException(
         "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
   }
@@ -402,18 +400,14 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
   void _handleSocketError(Object error, StackTrace stack) {
     _close();
-
     _socket.destroy();
 
     _cancelCurrentQueries(error, stack);
-    _cleanup();
   }
 
   void _handleSocketClosed() {
     _close();
-
     _cancelCurrentQueries();
-    _cleanup();
   }
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
@@ -482,14 +476,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     return string;
   }
 
-  Future _cleanup() async {
-    await _notifications.close();
-  }
-
-  void _close() {
+  Future _close() async {
     _connectionState = new _PostgreSQLConnectionStateClosed();
-    if(!_done.isCompleted)
+    if(!_done.isCompleted) {
       _done.complete();
+    }
+    await _notifications.close();
   }
 }
 
@@ -524,6 +516,7 @@ class PostgreSQLConnectionPool {
         this.timeZone: "UTC",
         this.useSSL: false});
 
+  bool _isClosed = false;
   final int size;
   final String host;
   final int port;
@@ -533,48 +526,57 @@ class PostgreSQLConnectionPool {
   final int timeoutInSeconds;
   final String timeZone;
   final bool useSSL;
+  var _connections = new List<PostgreSQLConnection>();
 
-  var _connections = new Map<PostgreSQLConnection, StreamSubscription>();
 
   PostgreSQLConnection get connection {
     if(_connections.length == 0) {
       throw new PostgreSQLException(
           "Attempting to get connection, but pool is not open.");
     }
-    PostgreSQLConnection selectedConnection = _connections.keys.first;
+    PostgreSQLConnection selectedConnection = _connections.first;
     int maxLengthQueryQueue() => selectedConnection._queryQueue.length;
-    for(var connection in _connections.keys.skip(1))
+    for(var connection in _connections.skip(1)) {
       if(connection._queryQueue.length < maxLengthQueryQueue()) {
         selectedConnection = connection;
       }
-      return selectedConnection;
+    }
+    return selectedConnection;
   }
 
   Future open() async {
-    for(int i = 0; i < size; i++) {
-      _createConnection();
+    if(_isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to reopen a closed connectionPool. Create a new instance instead.");
     }
-    await Future.wait(_connections.keys.map((connection) => connection.open()));
+    for(int i = 0; i < size; i++) {
+      _connections.add(_createConnection());
+    }
+    await Future.wait(_connections.map((connection) => connection.open()));
   }
 
-  void _createConnection()
-  {
+  PostgreSQLConnection _createConnection() {
     var connection =new PostgreSQLConnection(host, port, databaseName,
         username: username,
         password: password,
         timeoutInSeconds: timeoutInSeconds,
         timeZone: timeZone,
         useSSL: useSSL);
-    StreamSubscription subscription = connection.done.asStream().listen((_){
+    connection.done.then((_) {
+      if(_isClosed) {
+        return;
+      }
       _connections.remove(connection);
-      _createConnection();
+      PostgreSQLConnection newConnection = _createConnection();
+      _connections.add(newConnection);
+      newConnection.open();
     });
-    _connections[connection] = subscription;
+    return connection;
   }
 
   Future close() async {
-    await Future.wait(_connections.values.map((connection) => connection.cancel()));
-    await Future.wait(_connections.keys.map((connection) => connection.close()));
+    _isClosed = true;
+    await Future.wait(_connections.map((connection) => connection.close()));
     _connections.clear();
   }
 }
