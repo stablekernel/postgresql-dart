@@ -187,7 +187,12 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
         .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
   }
 
-  Future _open() async {
+  Future _ensureOpen() async {
+    if (isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to execute query, but connection is closed.");
+    }
+
     if(!_hasConnectedPreviously) {
       await open();
     }
@@ -228,12 +233,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Future<List<List<dynamic>>> query(String fmtString,
       {Map<String, dynamic> substitutionValues: null,
       bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is closed.");
-    }
-
-    await _open();
+    await _ensureOpen();
 
     var query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, this, null);
@@ -253,12 +253,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// or return rows.
   Future<int> execute(String fmtString,
       {Map<String, dynamic> substitutionValues: null}) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is closed.");
-    }
-
-    await _open();
+    await _ensureOpen();
 
     var query = new Query<int>(fmtString, substitutionValues, this, null)
       ..onlyReturnAffectedRowCount = true;
@@ -295,12 +290,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///         });
   Future<dynamic> transaction(
       Future<dynamic> queryBlock(PostgreSQLExecutionContext connection)) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is closed.");
-    }
-
-    await _open();
+    await _ensureOpen();
 
     var proxy = new _TransactionProxy(this, queryBlock);
 
