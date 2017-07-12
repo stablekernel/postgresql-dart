@@ -221,12 +221,8 @@ void main() {
           username: "darttrust");
       conn.open();
 
-      try {
-        await conn.execute("select 1");
-        expect(true, false);
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is closed"));
-      }
+      var result = await conn.execute("select 1");
+      expect(result, 1);
     });
 
     test("SSL Sending queries to opening connection triggers error", () async {
@@ -234,12 +230,8 @@ void main() {
           username: "darttrust", useSSL: true);
       conn.open();
 
-      try {
-        await conn.execute("select 1");
-        expect(true, false);
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is closed"));
-      }
+      var result = await conn.execute("select 1");
+      expect(result, 1);
     });
 
     test("Starting transaction while opening connection triggers error",
@@ -248,14 +240,10 @@ void main() {
           username: "darttrust");
       conn.open();
 
-      try {
-        await conn.transaction((ctx) async {
-          await ctx.execute("select 1");
-        });
-        expect(true, false);
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is closed"));
-      }
+      await conn.transaction((ctx) async {
+        var result = await ctx.execute("select 1");
+        expect(result, 1);
+      });
     });
 
     test("SSL Starting transaction while opening connection triggers error",
@@ -264,14 +252,10 @@ void main() {
           username: "darttrust", useSSL: true);
       conn.open();
 
-      try {
-        await conn.transaction((ctx) async {
-          await ctx.execute("select 1");
-        });
-        expect(true, false);
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is closed"));
-      }
+      await conn.transaction((ctx) async {
+        var result = await ctx.execute("select 1");
+        expect(result, 1);
+      });
     });
 
     test("Invalid password reports error, conn is closed, disables conn",
