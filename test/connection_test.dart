@@ -225,7 +225,7 @@ void main() {
         await conn.execute("select 1");
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is not open"));
+        expect(e.message, contains("connection is closed"));
       }
     });
 
@@ -238,7 +238,7 @@ void main() {
         await conn.execute("select 1");
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is not open"));
+        expect(e.message, contains("connection is closed"));
       }
     });
 
@@ -254,7 +254,7 @@ void main() {
         });
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is not open"));
+        expect(e.message, contains("connection is closed"));
       }
     });
 
@@ -270,7 +270,7 @@ void main() {
         });
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("connection is not open"));
+        expect(e.message, contains("connection is closed"));
       }
     });
 
@@ -562,7 +562,7 @@ void main() {
         await conn.execute("select 1");
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("but connection is not open"));
+        expect(e.message, contains("but connection is closed"));
       }
 
       try {
@@ -578,7 +578,7 @@ Future expectConnectionIsInvalid(PostgreSQLConnection conn) async {
     await conn.execute("select 1");
     expect(true, false);
   } on PostgreSQLException catch (e) {
-    expect(e.message, contains("connection is not open"));
+    expect(e.message, contains("connection is closed"));
   }
 
   try {
