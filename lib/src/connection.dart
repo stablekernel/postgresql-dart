@@ -164,27 +164,32 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       throw new PostgreSQLException(
           "Attempting to reopen a closed connection. Create a new instance instead.");
     }
+    try {
+      _hasConnectedPreviously = true;
+      _socket = await Socket
+          .connect(host, port)
+          .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
 
-    _hasConnectedPreviously = true;
-    _socket = await Socket
-        .connect(host, port)
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
+      _framer = new MessageFramer();
+      if (useSSL) {
+        _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+      }
 
-    _framer = new MessageFramer();
-    if (useSSL) {
-      _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+      var connectionComplete = new Completer();
+
+      _socket.listen(_readData,
+          onError: _handleSocketError, onDone: _handleSocketClosed);
+
+      _transitionToState(
+          new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
+
+      return connectionComplete.future
+          .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
     }
-
-    var connectionComplete = new Completer();
-
-    _socket.listen(_readData,
-        onError: _handleSocketError, onDone: _handleSocketClosed);
-
-    _transitionToState(
-        new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
-
-    return connectionComplete.future
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
+    on SocketException catch(_) {
+      _close();
+      rethrow;
+    }
   }
 
   Future _ensureOpen() async {
