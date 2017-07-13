@@ -183,10 +183,10 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       _transitionToState(
           new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
-      return connectionComplete.future
+      return await connectionComplete.future
           .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
     }
-    on SocketException catch(_) {
+    on Exception catch(_) {
       _close();
       rethrow;
     }
