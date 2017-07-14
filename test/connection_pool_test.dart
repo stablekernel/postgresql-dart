@@ -4,7 +4,7 @@ import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("Successful notifications", () {
+  group("Connection pool", () {
     int maxConnection = 5;
     PostgreSQLConnectionPool pool;
 
@@ -18,21 +18,27 @@ void main() {
       await pool.close();
     });
 
-    test("Pool connection empty test", () async {
+    test("Empty test", () async {
     });
 
-    test("Pool connection one connection", () async {
+    test("One connection", () async {
       expect(await pool.connection.execute("select 1"), equals(1));
     });
 
-    test("Pool connection recreation", () async {
-      for(int i=0; i < 20; i++ ) {
+    test("Recreation", () async {
+      for(int i=0; i < 5; i++ ) {
+        var connection = pool.connection;
+        expect(await connection.execute("select 1"), equals(1));
+        await connection.close();
+      }
+      await new Future.delayed(new Duration(milliseconds: 200));
+      for(int i=0; i < 5; i++ ) {
         var connection = pool.connection;
         expect(await connection.execute("select 1"), equals(1));
         await connection.close();
       }
     });
-    test("Pool connection many quaryes", () async {
+    test("Many quaryes", () async {
       var queryes = new List<Future>();
       for(int i=0; i < 20; i++ ) {
         var connection = pool.connection;
@@ -42,6 +48,30 @@ void main() {
       for(int i=0; i < 20; i++ ) {
         var result = await queryes[i];
         expect(result.first.first, i);
+      }
+    });
+    test("Not available connections", () async {
+      for(int i=0; i < 5; i++ ) {
+        var connection = pool.connection;
+        expect(await connection.execute("select 1"), equals(1));
+        await connection.close();
+      }
+      try {
+        var connection = pool.connection;
+        expect(true, false);
+      }
+      on PostgreSQLException catch(e) {
+        expect(e.message, contains("not available connections"));
+      }
+    });
+    test("Get connection after close", () async {
+      await pool.close();
+      try {
+        var connection = pool.connection;
+        expect(true, false);
+      }
+      on PostgreSQLException catch(e) {
+        expect(e.message, contains("but pool is closed"));
       }
     });
   });

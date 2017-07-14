@@ -573,6 +573,7 @@ class PostgreSQLConnectionPool {
         return;
       }
 
+      _connections.remove(connection);
       var delayed = new Future.delayed(_getRetryDelayedDuration());
       await Future.any([_done.future, delayed]);
 
@@ -580,7 +581,6 @@ class PostgreSQLConnectionPool {
         return;
       }
 
-      _connections.remove(connection);
       await _aliveConnection(_createConnection());
     });
     return connection;
