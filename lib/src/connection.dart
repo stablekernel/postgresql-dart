@@ -1,6 +1,7 @@
 library postgres.connection;
 
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'message_window.dart';
@@ -509,9 +510,10 @@ class PostgreSQLConnectionPool {
         this.password: null,
         this.timeoutInSeconds: 30,
         this.timeZone: "UTC",
-        this.useSSL: false});
+        this.useSSL: false,
+        int maxRetryIntervalInSeconds = 5})
+  : _maxRetryInterval = new Duration(seconds: maxRetryIntervalInSeconds);
 
-  bool _isClosed = false;
   final int size;
   final String host;
   final int port;
@@ -521,13 +523,23 @@ class PostgreSQLConnectionPool {
   final int timeoutInSeconds;
   final String timeZone;
   final bool useSSL;
-  var _connections = new List<PostgreSQLConnection>();
+  final Duration _maxRetryInterval;
+  final Completer _done = new Completer();
 
+  bool get _isClosed => _done.isCompleted;
 
+  var _connections = new Set<PostgreSQLConnection>();
+  int _countFailedConnected = 0;
+
+  /// Get opened connection from pool
   PostgreSQLConnection get connection {
+    if(_isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to get connection, but pool is closed.");
+    }
     if(_connections.length == 0) {
       throw new PostgreSQLException(
-          "Attempting to get connection, but pool is not open.");
+          "Attempting to get connection, but has not available connections.");
     }
     PostgreSQLConnection selectedConnection = _connections.first;
     int maxLengthQueryQueue() => selectedConnection._queryQueue.length;
@@ -539,39 +551,74 @@ class PostgreSQLConnectionPool {
     return selectedConnection;
   }
 
+  /// Open connections with a PostgreSQL database.
   Future open() async {
     if(_isClosed) {
       throw new PostgreSQLException(
           "Attempting to reopen a closed connectionPool. Create a new instance instead.");
     }
-    for(int i = 0; i < size; i++) {
-      _connections.add(_createConnection());
-    }
-    await Future.wait(_connections.map((connection) => connection.open()));
+    var newConnections = new List.generate(size, (_) => _createConnection());
+    await Future.wait(newConnections.map(_aliveConnection));
   }
 
   PostgreSQLConnection _createConnection() {
-    var connection =new PostgreSQLConnection(host, port, databaseName,
+    var connection = new PostgreSQLConnection(host, port, databaseName,
         username: username,
         password: password,
         timeoutInSeconds: timeoutInSeconds,
         timeZone: timeZone,
         useSSL: useSSL);
-    connection.done.then((_) {
+    connection.done.then((_) async {
       if(_isClosed) {
         return;
       }
+
+      var delayed = new Future.delayed(_getRetryDelayedDuration());
+      await Future.any([_done.future, delayed]);
+
+      if(_isClosed) {
+        return;
+      }
+
       _connections.remove(connection);
-      PostgreSQLConnection newConnection = _createConnection();
-      _connections.add(newConnection);
-      newConnection.open();
+      await _aliveConnection(_createConnection());
     });
     return connection;
   }
 
+  Duration _getRetryDelayedDuration() {
+    int exponent = _countFailedConnected ~/ size;
+    var result = new Duration(milliseconds: pow(2, exponent));
+
+    if(result > _maxRetryInterval) {
+      result = _maxRetryInterval;
+    }
+    return result;
+  }
+
+  Future _aliveConnection(PostgreSQLConnection connection) async {
+    try {
+      await connection.open();
+      _connections.add(connection);
+      _resetRetryDuration();
+    }
+    on Exception catch(_) {
+      _countFailedConnected++;
+    }
+  }
+
+  void _resetRetryDuration() {
+    _countFailedConnected = 0;
+  }
+
+  /// Close connections with a PostgreSQL database.
   Future close() async {
-    _isClosed = true;
-    await Future.wait(_connections.map((connection) => connection.close()));
+    if(_isClosed) {
+      return;
+    }
+    _done.complete();
+    var closingConnections = _connections.toList();
     _connections.clear();
+    await Future.wait(closingConnections.map((connection) => connection.close()));
   }
 }
