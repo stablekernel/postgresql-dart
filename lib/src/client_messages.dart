@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'query.dart';
 import 'constants.dart';
 import 'package:crypto/crypto.dart';
-import 'dart:convert';
 
 abstract class ClientMessage {
   static const int FormatText = 0;

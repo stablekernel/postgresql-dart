@@ -268,30 +268,6 @@ void main() {
       ]);
     });
 
-
-    test("JSON wire format", () async {
-      var insertWithType = (v) async {
-        return (await connection.query("INSERT INTO t (j) VALUES "
-            "(${PostgreSQLFormat.id("j", type: PostgreSQLDataType.json)}) "
-            "RETURNING j",
-              substitutionValues: {"j": v})).first.first;
-      };
-      expect(await insertWithType(null), null);
-      expect(await insertWithType("a"), "a");
-      expect(await insertWithType(1), 1);
-      expect(await insertWithType(2.0), 2.0);
-      expect(await insertWithType({"a": "b"}), {"a": "b"});
-      expect(await insertWithType([{"a":"b"}]), [{"a":"b"}]);
-      expect(await insertWithType({"a":true}), {"a":true});
-
-      var insertWithoutType = (v) async {
-        return (await connection.query("INSERT INTO t (j) VALUES (@j) RETURNING j",
-          substitutionValues: {"j": v})).first.first;
-      };
-      expect(await insertWithoutType({"a": "b"}), {"a": "b"});
-      expect(await insertWithoutType({"a":true}), {"a":true});
-    });
-
     test("Can cast text to int on db server", () async {
       var results = await connection.query(
         "INSERT INTO u (i1, i2) VALUES (@i1::int4, @i2::int4) RETURNING i1, i2",
@@ -368,6 +344,21 @@ void main() {
         expect(true, false);
       } on FormatException catch (e) {
         expect(e.toString(), contains("Invalid type for parameter value"));
+      }
+    });
+
+    test("Invalid type code", () async {
+      try {
+        await connection.query(
+            "INSERT INTO t (i1, i2) values (@i1:qwerty, @i2:int4)",
+            substitutionValues: {
+              "i1": "1",
+              "i2": 1
+            });
+        expect(true, false);
+      } on FormatException catch (e) {
+        expect(e.toString(), contains("Invalid type code"));
+        expect(e.toString(), contains("'@i1:qwerty"));
       }
     });
   });

@@ -284,6 +284,9 @@ class PostgreSQLFormatIdentifier {
       var dataTypeString = variableComponents.last;
       if (dataTypeString != null) {
         typeCode = postgresCodeForDataTypeString(dataTypeString);
+        if (typeCode == null) {
+          throw new FormatException("Invalid type code in substitution variable '$t'");
+        }
       }
     } else {
       throw new FormatException(
