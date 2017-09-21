@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.9.6
+
+- Adds `Connection.notifications` to listen for `NOTIFY` events.
+- Adds better error reporting.
+
+## 0.9.5
+
+- Allow connect via SSL.
+
 ## 0.9.4
 
 - Fixed issue with buffer length

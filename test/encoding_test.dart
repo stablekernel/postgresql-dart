@@ -173,6 +173,7 @@ void main() {
         "FALSE");
   });
 
+
   test("Encode JSONB", () {
     expect(PostgreSQLCodec.encode(null, dataType: PostgreSQLDataType.json), "null");
     expect(PostgreSQLCodec.encode("a", dataType: PostgreSQLDataType.json), "'\"a\"'");

@@ -1,6 +1,8 @@
 library postgres.connection;
 
 import 'dart:async';
+import 'dart:typed_data';
+
 import 'message_window.dart';
 import 'query.dart';
 
@@ -77,7 +79,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _connectionState.connection = this;
   }
 
-  // Add flag for debugging that captures stack trace prior to execution
+  final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
 
   /// Hostname of database this connection refers to.
   String host;
@@ -103,6 +105,17 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// The timezone of this connection for date operations that don't specify a timezone.
   String timeZone;
 
+  /// The processID of this backend.
+  int processID;
+
+  /// Stream of notification from the database.
+  ///
+  /// Listen to this [Stream] to receive events from PostgreSQL NOTIFY commands.
+  ///
+  /// To determine whether or not the NOTIFY came from this instance, compare [processID]
+  /// to [Notification.processID].
+  Stream<Notification> get notifications => _notifications.stream;
+
   /// Whether or not this connection is open or not.
   ///
   /// This is [true] when this instance is first created and after it has been closed or encountered an unrecoverable error.
@@ -122,7 +135,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Map<String, QueryCache> _reuseMap = {};
   int _reuseCounter = 0;
 
-  int _processID;
   int _secretKey;
   List<int> _salt;
 
@@ -152,34 +164,25 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     }
 
     _hasConnectedPreviously = true;
-
-    if (useSSL) {
-      _socket = await SecureSocket
-          .connect(host, port)
-          .timeout(new Duration(seconds: timeoutInSeconds));
-    } else {
-      _socket = await Socket
-          .connect(host, port)
-          .timeout(new Duration(seconds: timeoutInSeconds));
-    }
+    _socket = await Socket
+        .connect(host, port)
+        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
 
     _framer = new MessageFramer();
+    if (useSSL) {
+      _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+    }
+
+    var connectionComplete = new Completer();
+
     _socket.listen(_readData,
         onError: _handleSocketError, onDone: _handleSocketClosed);
 
-    var connectionComplete = new Completer();
     _transitionToState(
         new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
     return connectionComplete.future
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: () {
-      _connectionState = new _PostgreSQLConnectionStateClosed();
-      _socket?.destroy();
-
-      _cancelCurrentQueries();
-      throw new PostgreSQLException(
-          "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
-    });
+        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
   }
 
   /// Closes a connection.
@@ -191,6 +194,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     await _socket?.close();
 
     _cancelCurrentQueries();
+
+    return _cleanup();
   }
 
   /// Executes a query on this connection.
@@ -298,6 +303,16 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
   ////////
 
+  void _timeout() {
+    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _socket?.destroy();
+
+    _cancelCurrentQueries();
+    _cleanup();
+    throw new PostgreSQLException(
+        "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
+  }
+
   Future<dynamic> _enqueue(Query query) async {
     _queryQueue.add(query);
     _transitionToState(_connectionState.awake());
@@ -317,7 +332,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     return result;
   }
 
-  void _cancelCurrentQueries() {
+  void _cancelCurrentQueries([Object error, StackTrace stackTrace]) {
+    error ??= "Cancelled";
     var queries = _queryQueue;
     _queryQueue = [];
 
@@ -326,7 +342,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     // synchronous.
     scheduleMicrotask(() {
       var exception =
-          new PostgreSQLException("Connection closed or query cancelled.");
+          new PostgreSQLException("Connection closed or query cancelled (reason: $error).", stackTrace: stackTrace);
       queries?.forEach((q) {
         q.completeError(exception);
       });
@@ -359,26 +375,66 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       try {
         if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));
+        } else if (msg is NotificationResponseMessage) {
+            _notifications.add(
+                new Notification(msg.processID, msg.channel, msg.payload));
         } else {
           _transitionToState(_connectionState.onMessage(msg));
         }
-      } catch (e) {
-        _handleSocketError(e);
+      } catch (e, st) {
+        _handleSocketError(e, st);
       }
     }
   }
 
-  void _handleSocketError(dynamic error) {
+  void _handleSocketError(Object error, StackTrace stack) {
     _connectionState = new _PostgreSQLConnectionStateClosed();
     _socket.destroy();
 
-    _cancelCurrentQueries();
+    _cancelCurrentQueries(error, stack);
+    _cleanup();
   }
 
   void _handleSocketClosed() {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
     _cancelCurrentQueries();
+    _cleanup();
+  }
+
+  Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
+      {int timeout: 30}) async {
+    var sslCompleter = new Completer<int>();
+
+    originalSocket.listen((data) {
+      if (data.length != 1) {
+        sslCompleter.completeError(new PostgreSQLException(
+            "Could not initalize SSL connection, received unknown byte stream."));
+        return;
+      }
+
+      sslCompleter.complete(data.first);
+    },
+        onDone: () => sslCompleter.completeError(new PostgreSQLException(
+            "Could not initialize SSL connection, connection closed during handshake.")),
+        onError: (err) {
+          sslCompleter.completeError(err);
+        });
+
+    var byteBuffer = new ByteData(8);
+    byteBuffer.setUint32(0, 8);
+    byteBuffer.setUint32(4, 80877103);
+    originalSocket.add(byteBuffer.buffer.asUint8List());
+
+    var responseByte = await sslCompleter.future
+        .timeout(new Duration(seconds: timeout), onTimeout: _timeout);
+    if (responseByte == 83) {
+      return SecureSocket
+          .secure(originalSocket, onBadCertificate: (certificate) => true)
+          .timeout(new Duration(seconds: timeout), onTimeout: _timeout);
+    }
+
+    throw new PostgreSQLException("SSL not allowed for this connection.");
   }
 
   void _cacheQuery(Query query) {
@@ -411,10 +467,31 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
 
     return string;
   }
+
+  Future _cleanup() async {
+    await _notifications.close();
+  }
 }
 
 class _TransactionRollbackException implements Exception {
   _TransactionRollbackException(this.reason);
 
   String reason;
+}
+
+/// Represents a notification from PostgreSQL.
+///
+/// Instances of this type are created and sent via [PostgreSQLConnection.notifications].
+class Notification {
+  /// Creates an instance of this type.
+  Notification(this.processID, this.channel, this.payload);
+
+  /// The backend ID from which the notification was generated.
+  final int processID;
+
+  /// The name of the PostgreSQL channel that this notification occurred on.
+  final String channel;
+
+  /// An optional data payload accompanying this notification.
+  final String payload;
 }

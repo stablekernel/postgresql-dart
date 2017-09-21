@@ -55,14 +55,17 @@ void main() {
     });
 
     test("Really long raw substitution value", () async {
-      var result = await connection.query("INSERT INTO t (t) VALUES (${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)}) returning t;", substitutionValues: {
-        "t" : lorumIpsum
-      });
-      expect(result, [[lorumIpsum]]);
+      var result = await connection.query(
+          "INSERT INTO t (t) VALUES (${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)}) returning t;",
+          substitutionValues: {"t": lorumIpsum});
+      expect(result, [
+        [lorumIpsum]
+      ]);
     });
 
     test("Really long SQL string in execute", () async {
-      var result = await connection.execute("INSERT INTO t (t) VALUES ('$lorumIpsum') returning t;");
+      var result = await connection
+          .execute("INSERT INTO t (t) VALUES ('$lorumIpsum') returning t;");
       expect(result, 1);
     });
 
@@ -265,6 +268,7 @@ void main() {
       ]);
     });
 
+
     test("JSON wire format", () async {
       var insertWithType = (v) async {
         return (await connection.query("INSERT INTO t (j) VALUES "
@@ -286,6 +290,19 @@ void main() {
       };
       expect(await insertWithoutType({"a": "b"}), {"a": "b"});
       expect(await insertWithoutType({"a":true}), {"a":true});
+    });
+
+    test("Can cast text to int on db server", () async {
+      var results = await connection.query(
+        "INSERT INTO u (i1, i2) VALUES (@i1::int4, @i2::int4) RETURNING i1, i2",
+        substitutionValues: {
+          "i1": "0",
+          "i2": "1"
+        });
+
+      expect(results, [
+        [0, 1]
+      ]);
     });
   });
 
@@ -337,6 +354,20 @@ void main() {
       } on FormatException catch (e) {
         expect(e.message,
             contains("Format string specified identifier with name i1"));
+      }
+    });
+
+    test("Wrong type for parameter in substitution values fails", () async {
+      try {
+        await connection.query(
+            "INSERT INTO t (i1, i2) values (@i1:int4, @i2:int4)",
+            substitutionValues: {
+              "i1": "1",
+              "i2": 1
+            });
+        expect(true, false);
+      } on FormatException catch (e) {
+        expect(e.toString(), contains("Invalid type for parameter value"));
       }
     });
   });
