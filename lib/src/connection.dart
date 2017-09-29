@@ -1,6 +1,7 @@
 library postgres.connection;
 
 import 'dart:async';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'message_window.dart';
@@ -80,6 +81,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   final StreamController<Notification> _notifications = new StreamController<Notification>.broadcast();
+  final Completer _done = new Completer();
 
   /// Hostname of database this connection refers to.
   String host;
@@ -116,18 +118,19 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// to [Notification.processID].
   Stream<Notification> get notifications => _notifications.stream;
 
-  /// Whether or not this connection is open or not.
-  ///
-  /// This is [true] when this instance is first created and after it has been closed or encountered an unrecoverable error.
+  /// This is [true] when this instance it has been closed or encountered an unrecoverable error.
   /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a new instance
   /// must be created.
-  bool get isClosed => _connectionState is _PostgreSQLConnectionStateClosed;
+  bool get isClosed => _done.isCompleted;
 
   /// Settings values from the connected database.
   ///
   /// After connecting to a database, this map will contain the settings values that the database returns.
   /// Prior to connection, it is the empty map.
   Map<String, String> settings = {};
+
+  ///This completed when connection closed
+  Future get done => _done.future;
 
   Socket _socket;
   MessageFramer _framer = new MessageFramer();
@@ -162,40 +165,49 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       throw new PostgreSQLException(
           "Attempting to reopen a closed connection. Create a new instance instead.");
     }
+    try {
+      _hasConnectedPreviously = true;
+      _socket = await Socket
+          .connect(host, port)
+          .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
 
-    _hasConnectedPreviously = true;
-    _socket = await Socket
-        .connect(host, port)
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
+      _framer = new MessageFramer();
+      if (useSSL) {
+        _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+      }
 
-    _framer = new MessageFramer();
-    if (useSSL) {
-      _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+      var connectionComplete = new Completer();
+
+      _socket.listen(_readData,
+          onError: _handleSocketError, onDone: _handleSocketClosed);
+
+      _transitionToState(
+          new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
+
+      return await connectionComplete.future
+          .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
+    } catch(_) {
+      _close();
+      rethrow;
     }
+  }
 
-    var connectionComplete = new Completer();
-
-    _socket.listen(_readData,
-        onError: _handleSocketError, onDone: _handleSocketClosed);
-
-    _transitionToState(
-        new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
-
-    return connectionComplete.future
-        .timeout(new Duration(seconds: timeoutInSeconds), onTimeout: _timeout);
+  void _ensureOpen() {
+    if (isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to execute query, but connection is closed.");
+    }
   }
 
   /// Closes a connection.
   ///
   /// After the returned [Future] completes, this connection can no longer be used to execute queries. Any queries in progress or queued are cancelled.
   Future close() async {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    await _close();
 
     await _socket?.close();
 
     _cancelCurrentQueries();
-
-    return _cleanup();
   }
 
   /// Executes a query on this connection.
@@ -222,10 +234,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Future<List<List<dynamic>>> query(String fmtString,
       {Map<String, dynamic> substitutionValues: null,
       bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
-    }
+    _ensureOpen();
 
     var query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, this, null);
@@ -245,10 +254,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   /// or return rows.
   Future<int> execute(String fmtString,
       {Map<String, dynamic> substitutionValues: null}) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
-    }
+    _ensureOpen();
 
     var query = new Query<int>(fmtString, substitutionValues, this, null)
       ..onlyReturnAffectedRowCount = true;
@@ -285,10 +291,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///         });
   Future<dynamic> transaction(
       Future<dynamic> queryBlock(PostgreSQLExecutionContext connection)) async {
-    if (isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
-    }
+    _ensureOpen();
 
     var proxy = new _TransactionProxy(this, queryBlock);
 
@@ -304,11 +307,10 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ////////
 
   void _timeout() {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
     _socket?.destroy();
 
     _cancelCurrentQueries();
-    _cleanup();
     throw new PostgreSQLException(
         "Timed out trying to connect to database postgres://$host:$port/$databaseName.");
   }
@@ -388,18 +390,15 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   void _handleSocketError(Object error, StackTrace stack) {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _close();
     _socket.destroy();
 
     _cancelCurrentQueries(error, stack);
-    _cleanup();
   }
 
   void _handleSocketClosed() {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
-
+    _close();
     _cancelCurrentQueries();
-    _cleanup();
   }
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
@@ -468,7 +467,11 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     return string;
   }
 
-  Future _cleanup() async {
+  Future _close() async {
+    _connectionState = new _PostgreSQLConnectionStateClosed();
+    if(!_done.isCompleted) {
+      _done.complete();
+    }
     await _notifications.close();
   }
 }
@@ -494,4 +497,122 @@ class Notification {
 
   /// An optional data payload accompanying this notification.
   final String payload;
+}
+
+class PostgreSQLConnectionPool {
+  PostgreSQLConnectionPool(this.size, this.host, this.port, this.databaseName,
+      {this.username: null,
+        this.password: null,
+        this.timeoutInSeconds: 30,
+        this.timeZone: "UTC",
+        this.useSSL: false,
+        int maxRetryIntervalInSeconds = 5})
+  : _maxRetryInterval = new Duration(seconds: maxRetryIntervalInSeconds);
+
+  final int size;
+  final String host;
+  final int port;
+  final String databaseName;
+  final String username;
+  final String password;
+  final int timeoutInSeconds;
+  final String timeZone;
+  final bool useSSL;
+  final Duration _maxRetryInterval;
+  final Completer _done = new Completer();
+
+  bool get _isClosed => _done.isCompleted;
+
+  var _connections = new Set<PostgreSQLConnection>();
+  int _countFailedConnected = 0;
+
+  /// Get opened connection from pool
+  PostgreSQLConnection get connection {
+    if(_isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to get connection, but pool is closed.");
+    }
+    if(_connections.length == 0) {
+      throw new PostgreSQLException(
+          "Attempting to get connection, but has not available connections.");
+    }
+    PostgreSQLConnection selectedConnection = _connections.first;
+    int maxLengthQueryQueue() => selectedConnection._queryQueue.length;
+    for(var connection in _connections.skip(1)) {
+      if(connection._queryQueue.length < maxLengthQueryQueue()) {
+        selectedConnection = connection;
+      }
+    }
+    return selectedConnection;
+  }
+
+  /// Open connections with a PostgreSQL database.
+  Future open() async {
+    if(_isClosed) {
+      throw new PostgreSQLException(
+          "Attempting to reopen a closed connectionPool. Create a new instance instead.");
+    }
+    var newConnections = new List.generate(size, (_) => _createConnection());
+    await Future.wait(newConnections.map(_aliveConnection));
+  }
+
+  PostgreSQLConnection _createConnection() {
+    var connection = new PostgreSQLConnection(host, port, databaseName,
+        username: username,
+        password: password,
+        timeoutInSeconds: timeoutInSeconds,
+        timeZone: timeZone,
+        useSSL: useSSL);
+    connection.done.then((_) async {
+      if(_isClosed) {
+        return;
+      }
+
+      _connections.remove(connection);
+      var delayed = new Future.delayed(_getRetryDelayedDuration());
+      await Future.any([_done.future, delayed]);
+
+      if(_isClosed) {
+        return;
+      }
+
+      await _aliveConnection(_createConnection());
+    });
+    return connection;
+  }
+
+  Duration _getRetryDelayedDuration() {
+    int exponent = _countFailedConnected ~/ size;
+    var result = new Duration(milliseconds: pow(2, exponent));
+
+    if(result > _maxRetryInterval) {
+      result = _maxRetryInterval;
+    }
+    return result;
+  }
+
+  Future _aliveConnection(PostgreSQLConnection connection) async {
+    try {
+      await connection.open();
+      _connections.add(connection);
+      _resetRetryDuration();
+    } catch(_) {
+      _countFailedConnected++;
+    }
+  }
+
+  void _resetRetryDuration() {
+    _countFailedConnected = 0;
+  }
+
+  /// Close connections with a PostgreSQL database.
+  Future close() async {
+    if(_isClosed) {
+      return;
+    }
+    _done.complete();
+    var closingConnections = _connections.toList();
+    _connections.clear();
+    await Future.wait(closingConnections.map((connection) => connection.close()));
+  }
 }

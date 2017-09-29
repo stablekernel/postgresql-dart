@@ -39,7 +39,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
       bool allowReuse: true}) async {
     if (connection.isClosed) {
       throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          "Attempting to execute query, but connection is closed.");
     }
 
     var query = new Query<List<List<dynamic>>>(
@@ -56,7 +56,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
       {Map<String, dynamic> substitutionValues: null}) async {
     if (connection.isClosed) {
       throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          "Attempting to execute query, but connection is closed.");
     }
 
     var query = new Query<int>(fmtString, substitutionValues, connection, this)
