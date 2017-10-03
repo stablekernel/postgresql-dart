@@ -30,30 +30,16 @@ void main() {
     test("UTF8 strings in value", () async {
       var result = await connection.query(
           "INSERT INTO t (t) values "
-          "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})"
-          "returning t",
+              "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})"
+              "returning t",
           substitutionValues: {
-            "t": "\\'°'∆",
+            "t": "°∆",
           });
 
-      var expectedRow = ["\\'°'∆"];
+      var expectedRow = ["°∆"];
       expect(result, [expectedRow]);
 
       result = await connection.query("select t from t");
-      expect(result, [expectedRow]);
-    });
-
-    test("UTF8 strings in value with execute", () async {
-      await connection.execute(
-          "INSERT INTO t (t) values "
-          "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})"
-          "returning t",
-          substitutionValues: {
-            "t": "\\'°'∆",
-          });
-
-      var expectedRow = ["\\'°'∆"];
-      var result = await connection.query("select t from t");
       expect(result, [expectedRow]);
     });
 
@@ -65,6 +51,43 @@ void main() {
       expect(result, [expectedRow]);
 
       result = await connection.query("select t from t");
+      expect(result, [expectedRow]);
+    });
+
+    test("UTF8 strings in value with escape characters", () async {
+      await connection.execute(
+          "INSERT INTO t (t) values "
+              "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})",
+          substitutionValues: {
+            "t": "'©™®'",
+          });
+
+      var expectedRow = ["'©™®'"];
+
+      var result = await connection.query("select t from t");
+      expect(result, [expectedRow]);
+    });
+
+    test("UTF8 strings in value with backslash", () async {
+      await connection.execute(
+          "INSERT INTO t (t) values "
+              "(${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)})",
+          substitutionValues: {
+            "t": "°\\'©™®'",
+          });
+
+      var expectedRow = ["°\\'©™®'"];
+
+      var result = await connection.query("select t from t");
+      expect(result, [expectedRow]);
+    });
+
+    test("UTF8 strings in query with escape characters", () async {
+      await connection.execute("INSERT INTO t (t) values ('°''©™®''')");
+
+      var expectedRow = ["°'©™®'"];
+
+      var result = await connection.query("select t from t");
       expect(result, [expectedRow]);
     });
 
