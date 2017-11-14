@@ -231,6 +231,8 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   ///
   /// This method constructs and executes a query in the same way as [query], but returns each row as a [Map].
   ///
+  /// (Note: this method will execute additional queries to resolve table names the first time a table is encountered. These table names are cached per instance of this type.)
+  ///
   /// Each row map contains key-value pairs for every table in the query. The value is a [Map] that contains
   /// key-value pairs for each column from that table. For example, consider
   /// the following query:
