@@ -304,7 +304,7 @@ class _PostgreSQLConnectionStateReadyInTransaction extends _PostgreSQLConnection
     } catch (e) {
       scheduleMicrotask(() {
         q.completeError(e);
-        connection._transitionToState(new _PostgreSQLConnectionStateIdle());
+        connection._transitionToState(new _PostgreSQLConnectionStateTransactionFailure(transaction));
       });
 
       return new _PostgreSQLConnectionStateDeferredFailure();

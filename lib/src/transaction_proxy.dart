@@ -49,7 +49,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
       query.statementIdentifier = connection._reuseIdentifierForQuery(query);
     }
 
-    return await enqueue(query);
+    return enqueue(query);
   }
 
   Future<int> execute(String fmtString,
@@ -91,7 +91,8 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
     completer.complete(result);
   }
 
-  Future handleTransactionQueryError(dynamic err) async {}
+  Future handleTransactionQueryError(dynamic err) async {
+  }
 
   Future<T> enqueue<T>(Query<T> query) async {
     queryQueue.add(query);
@@ -104,9 +105,11 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
       connection._cacheQuery(query);
       queryQueue.remove(query);
     } catch (e) {
-      connection._cacheQuery(query);
-      queryQueue.remove(query);
-      rethrow;
+      queryQueue = [];
+
+      await execute("ROLLBACK");
+      completer.completeError(e);
+      return null;
     }
 
     return result;
