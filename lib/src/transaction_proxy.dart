@@ -13,12 +13,12 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
         .catchError(handleTransactionQueryError);
   }
 
-  Query beginQuery;
+  Query<dynamic> beginQuery;
   Completer completer = new Completer();
 
   Future get future => completer.future;
 
-  Query get pendingQuery {
+  Query<dynamic> get pendingQuery {
     if (queryQueue.length > 0) {
       return queryQueue.first;
     }
@@ -26,7 +26,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
     return null;
   }
 
-  List<Query> queryQueue = [];
+  List<Query<dynamic>> queryQueue = [];
   PostgreSQLConnection connection;
   _TransactionQuerySignature executionBlock;
 
@@ -93,7 +93,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
 
   Future handleTransactionQueryError(dynamic err) async {}
 
-  Future<dynamic> enqueue(Query query) async {
+  Future<T> enqueue<T>(Query<T> query) async {
     queryQueue.add(query);
     connection._transitionToState(connection._connectionState.awake());
 
