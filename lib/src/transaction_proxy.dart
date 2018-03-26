@@ -49,8 +49,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
       query.statementIdentifier = connection._reuseIdentifierForQuery(query);
     }
 
-    final rows = await enqueue(query);
-    return rows.map((Iterable<dynamic> row) => row.toList()).toList();
+    return enqueue(query);
   }
 
   Future<int> execute(String fmtString,

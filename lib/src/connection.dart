@@ -223,8 +223,7 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
       query.statementIdentifier = _reuseIdentifierForQuery(query);
     }
 
-    final rows = await _enqueue(query);
-    return rows.map((Iterable<dynamic> row) => row.toList()).toList();
+    return _enqueue(query);
   }
 
   /// Executes a query on this connection and returns each row as a [Map].
