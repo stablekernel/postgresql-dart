@@ -29,6 +29,8 @@ void main() {
 
       expect(outValue.length, 1);
       expect(outValue.first is List, true);
+      expect(outValue.first.length, 1);
+      expect(outValue.first.first, 1);
     });
 
 
