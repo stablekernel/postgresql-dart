@@ -197,6 +197,18 @@ void main() {
         expect(e.toString(), contains("Expected: List<int>"));
       }
     });
+
+    test("uuid", () async {
+      await expectInverse("00000000-0000-0000-0000-000000000000", PostgreSQLDataType.uuid);
+      await expectInverse("12345678-abcd-efab-cdef-012345678901", PostgreSQLDataType.uuid);
+
+      try {
+        await conn.query("INSERT INTO t (v) VALUES (@v:uuid)", substitutionValues: {"v": new DateTime.now()});
+        fail('unreachable');
+      } on FormatException catch (e) {
+        expect(e.toString(), contains("Expected: String"));
+      }
+    });
   });
 
   group("Text encoders", () {
@@ -317,6 +329,13 @@ void main() {
 
     expect(u.hasCachedBytes, true);
     expect(v.hasCachedBytes, true);
+  });
+
+  test("Encode UUID", () {
+    expect(PostgreSQLCodec.encode("00000000-0000-0000-0000-000000000000", dataType: PostgreSQLDataType.uuid),
+      "'00000000-0000-0000-0000-000000000000'");
+    expect(PostgreSQLCodec.encode("ffffffff-ffff-ffff-ffff-ffffffffffff", dataType: PostgreSQLDataType.uuid),
+      "'ffffffff-ffff-ffff-ffff-ffffffffffff'");
   });
 }
 
