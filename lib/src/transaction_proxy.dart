@@ -113,15 +113,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
     if (!_hasFailed) {
       _hasFailed = true;
       queryQueue = [];
-
-      try {
-        await execute("ROLLBACK");
-      } catch (_) {
-        await connection.close();
-        completer.completeError(error, trace);
-        rethrow;
-      }
-
+      await execute("ROLLBACK");
       completer.completeError(error, trace);
     }
   }
