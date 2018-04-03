@@ -298,6 +298,7 @@ class _PostgreSQLConnectionStateReadyInTransaction extends _PostgreSQLConnection
       }
 
       final cached = connection._cache[q.statement];
+      var cached = connection._cache[q.statement];
       q.sendExtended(connection._socket, cacheQuery: cached);
 
       return new _PostgreSQLConnectionStateBusy(q);
