@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:postgres/src/query_cache.dart';
 import 'package:postgres/src/execution_context.dart';
+import 'package:postgres/src/query_queue.dart';
 
 import 'message_window.dart';
 import 'query.dart';
@@ -18,112 +19,6 @@ part 'connection_fsm.dart';
 part 'transaction_proxy.dart';
 
 part 'exceptions.dart';
-
-abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionContext {
-  Map<int, String> _tableOIDNameMap = {};
-
-  Future<List<List<dynamic>>> query(String fmtString,
-    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
-    if (allowReuse) {
-      query.statementIdentifier = _reuseIdentifierForQuery(query);
-    }
-
-    return _enqueue(query);
-  }
-
-  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(String fmtString,
-    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
-    if (allowReuse) {
-      query.statementIdentifier = _reuseIdentifierForQuery(query);
-    }
-
-    final rows = await _enqueue(query);
-
-    return _mapifyRows(rows, query.fieldDescriptions);
-  }
-
-  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null}) {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<int>(fmtString, substitutionValues, this, null)..onlyReturnAffectedRowCount = true;
-
-    return _enqueue(query);
-  }
-
-  Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
-    List<List<dynamic>> rows, List<FieldDescription> columns) async {
-    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
-    // It's not a significant impact here, but an area for optimization. This includes
-    // assigning resolvedTableName
-    final tableOIDs = new Set.from(columns.map((f) => f.tableID));
-    final List<int> unresolvedTableOIDs = tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toList();
-    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
-
-    if (unresolvedTableOIDs.isNotEmpty) {
-      await _resolveTableOIDs(unresolvedTableOIDs);
-    }
-
-    columns.forEach((desc) {
-      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
-    });
-
-    final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
-    return rows.map((row) {
-      var rowMap = new Map.fromIterable(tableNames, key: (name) => name, value: (_) => {});
-
-      final iterator = columns.iterator;
-      row.forEach((column) {
-        iterator.moveNext();
-        rowMap[iterator.current.resolvedTableName][iterator.current.fieldName] = column;
-      });
-
-      return rowMap;
-    }).toList();
-  }
-
-  Future _resolveTableOIDs(List<int> oids) async {
-    final unresolvedIDString = oids.join(",");
-    final orderedTableNames =
-    await query("SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
-
-    final iterator = oids.iterator;
-    orderedTableNames.forEach((tableName) {
-      iterator.moveNext();
-      if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = tableName.first;
-      }
-    });
-  }
-
-  Future<T> _enqueue<T>(Query<T> query) async {
-    _queryQueue.add(query);
-    _transitionToState(_connectionState.awake());
-
-    try {
-      final result = await query.future;
-      _cacheQuery(query);
-      _queryQueue.remove(query);
-      return result;
-    } catch (e) {
-      _cacheQuery(query);
-      _queryQueue.remove(query);
-      rethrow;
-    }
-  }
-
-}
 
 /// Instances of this class connect to and communicate with a PostgreSQL database.
 ///
@@ -205,14 +100,8 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
   bool _hasConnectedPreviously = false;
   _PostgreSQLConnectionState _connectionState;
 
-  List<Query<dynamic>> _queryQueue = [];
-
-  Query<dynamic> get _pendingQuery {
-    if (_queryQueue.isEmpty) {
-      return null;
-    }
-    return _queryQueue.first;
-  }
+  PostgreSQLExecutionContext get _transaction => null;
+  PostgreSQLConnection get _connection => this;
 
   /// Establishes a connection with a PostgreSQL database.
   ///
@@ -251,7 +140,7 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
 
     await _socket?.close();
 
-    _cancelCurrentQueries();
+    _queue.cancel();
 
     return _cleanup();
   }
@@ -305,26 +194,9 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
     _connectionState = new _PostgreSQLConnectionStateClosed();
     _socket?.destroy();
 
-    _cancelCurrentQueries();
+    _queue.cancel();
     _cleanup();
     throw new PostgreSQLException("Timed out trying to connect to database postgres://$host:$port/$databaseName.");
-  }
-
-  void _cancelCurrentQueries([Object error, StackTrace stackTrace]) {
-    error ??= "Cancelled";
-    var queries = _queryQueue;
-    _queryQueue = [];
-
-    // We need to jump this to the next event so that the queries
-    // get the error and not the close message, since completeError is
-    // synchronous.
-    scheduleMicrotask(() {
-      var exception =
-          new PostgreSQLException("Connection closed or query cancelled (reason: $error).", stackTrace: stackTrace);
-      queries?.forEach((q) {
-        q.completeError(exception, stackTrace);
-      });
-    });
   }
 
   void _transitionToState(_PostgreSQLConnectionState newState) {
@@ -368,14 +240,14 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
     _connectionState = new _PostgreSQLConnectionStateClosed();
     _socket.destroy();
 
-    _cancelCurrentQueries(error, stack);
+    _queue.cancel(error, stack);
     _cleanup();
   }
 
   void _handleSocketClosed() {
     _connectionState = new _PostgreSQLConnectionStateClosed();
 
-    _cancelCurrentQueries();
+    _queue.cancel();
     _cleanup();
   }
 
@@ -439,4 +311,118 @@ class Notification {
 
   /// An optional data payload accompanying this notification.
   final String payload;
+}
+
+abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionContext {
+  Map<int, String> _tableOIDNameMap = {};
+  QueryQueue _queue = new QueryQueue();
+
+  PostgreSQLConnection get _connection;
+  PostgreSQLExecutionContext get _transaction;
+
+  Future<List<List<dynamic>>> query(String fmtString,
+    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
+    if (_connection.isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, _connection, _transaction);
+    if (allowReuse) {
+      query.statementIdentifier = _connection._cache.identifierForQuery(query);
+    }
+
+    return _enqueue(query);
+  }
+
+  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(String fmtString,
+    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
+    if (_connection.isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, _connection, _transaction);
+    if (allowReuse) {
+      query.statementIdentifier = _connection._cache.identifierForQuery(query);
+    }
+
+    final rows = await _enqueue(query);
+
+    return _mapifyRows(rows, query.fieldDescriptions);
+  }
+
+  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null}) {
+    if (_connection.isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<int>(fmtString, substitutionValues, _connection, _transaction)..onlyReturnAffectedRowCount = true;
+
+    return _enqueue(query);
+  }
+
+  void cancelTransaction({String reason: null});
+
+  Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
+    List<List<dynamic>> rows, List<FieldDescription> columns) async {
+    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
+    // It's not a significant impact here, but an area for optimization. This includes
+    // assigning resolvedTableName
+    final tableOIDs = new Set.from(columns.map((f) => f.tableID));
+    final List<int> unresolvedTableOIDs = tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toList();
+    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
+
+    if (unresolvedTableOIDs.isNotEmpty) {
+      await _resolveTableOIDs(unresolvedTableOIDs);
+    }
+
+    columns.forEach((desc) {
+      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
+    });
+
+    final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
+    return rows.map((row) {
+      var rowMap = new Map.fromIterable(tableNames, key: (name) => name, value: (_) => {});
+
+      final iterator = columns.iterator;
+      row.forEach((column) {
+        iterator.moveNext();
+        rowMap[iterator.current.resolvedTableName][iterator.current.fieldName] = column;
+      });
+
+      return rowMap;
+    }).toList();
+  }
+
+  Future _resolveTableOIDs(List<int> oids) async {
+    final unresolvedIDString = oids.join(",");
+    final orderedTableNames =
+    await query("SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
+
+    final iterator = oids.iterator;
+    orderedTableNames.forEach((tableName) {
+      iterator.moveNext();
+      if (tableName.first != null) {
+        _tableOIDNameMap[iterator.current] = tableName.first;
+      }
+    });
+  }
+
+  Future<T> _enqueue<T>(Query<T> query) async {
+    _queue.add(query);
+    _connection._transitionToState(_connection._connectionState.awake());
+
+    try {
+      final result = await query.future;
+      _connection._cache.add(query);
+      _queue.remove(query);
+      return result;
+    } catch (e, st) {
+      _queue.remove(query);
+      await _onQueryError(query, e, st);
+      rethrow;
+    }
+  }
+
+  Future _onQueryError(Query query, dynamic error, [StackTrace trace]) async {
+  }
 }
