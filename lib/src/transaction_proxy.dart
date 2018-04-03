@@ -1,16 +1,12 @@
 part of postgres.connection;
 
-typedef Future<dynamic> _TransactionQuerySignature(
-    PostgreSQLExecutionContext connection);
+typedef Future<dynamic> _TransactionQuerySignature(PostgreSQLExecutionContext connection);
 
 class _TransactionProxy implements PostgreSQLExecutionContext {
   _TransactionProxy(this.connection, this.executionBlock) {
-    beginQuery = new Query<int>("BEGIN", {}, connection, this)
-      ..onlyReturnAffectedRowCount = true;
+    beginQuery = new Query<int>("BEGIN", {}, connection, this)..onlyReturnAffectedRowCount = true;
 
-    beginQuery.future
-        .then(startTransaction)
-        .catchError(handleTransactionQueryError);
+    beginQuery.future.then(startTransaction).catchError(handleTransactionQueryError);
   }
 
   Query<dynamic> beginQuery;
@@ -36,16 +32,12 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
   }
 
   Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null,
-      bool allowReuse: true}) async {
+      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
     if (connection.isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
     }
 
-    var query = new Query<List<List<dynamic>>>(
-        fmtString, substitutionValues, connection, this);
-
+    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, connection, this);
     if (allowReuse) {
       query.statementIdentifier = connection._cache.identifierForQuery(query);
     }
@@ -53,15 +45,12 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
     return enqueue(query);
   }
 
-  Future<int> execute(String fmtString,
-      {Map<String, dynamic> substitutionValues: null}) async {
+  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null}) async {
     if (connection.isClosed) {
-      throw new PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
     }
 
-    var query = new Query<int>(fmtString, substitutionValues, connection, this)
-      ..onlyReturnAffectedRowCount = true;
+    var query = new Query<int>(fmtString, substitutionValues, connection, this)..onlyReturnAffectedRowCount = true;
 
     return enqueue(query);
   }
@@ -89,8 +78,7 @@ class _TransactionProxy implements PostgreSQLExecutionContext {
     completer.complete(result);
   }
 
-  Future handleTransactionQueryError(dynamic err) async {
-  }
+  Future handleTransactionQueryError(dynamic err) async {}
 
   Future<T> enqueue<T>(Query<T> query) async {
     queryQueue.add(query);

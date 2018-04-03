@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:postgres/src/query_cache.dart';
+import 'package:postgres/src/execution_context.dart';
 
 import 'message_window.dart';
 import 'query.dart';
@@ -18,51 +19,117 @@ part 'transaction_proxy.dart';
 
 part 'exceptions.dart';
 
-abstract class PostgreSQLExecutionContext {
-  /// Executes a query on this context.
-  ///
-  /// This method sends the query described by [fmtString] to the database and returns a [Future] whose value is the returned rows from the query after the query completes.
-  /// The format string may contain parameters that are provided in [substitutionValues]. Parameters are prefixed with the '@' character. Keys to replace the parameters
-  /// do not include the '@' character. For example:
-  ///
-  ///         connection.query("SELECT * FROM table WHERE id = @idParam", {"idParam" : 2});
-  ///
-  /// The type of the value is inferred by default, but can be made more specific by adding ':type" to the parameter pattern in the format string. The possible values
-  /// are declared as static variables in [PostgreSQLCodec] (e.g., [PostgreSQLCodec.TypeInt4]). For example:
-  ///
-  ///         connection.query("SELECT * FROM table WHERE id = @idParam:int4", {"idParam" : 2});
-  ///
-  /// You may also use [PostgreSQLFormat.id] to create parameter patterns.
-  ///
-  /// If successful, the returned [Future] completes with a [List] of rows. Each is row is represented by a [List] of column values for that row that were returned by the query.
-  ///
-  /// By default, instances of this class will reuse queries. This allows significantly more efficient transport to and from the database. You do not have to do
-  /// anything to opt in to this behavior, this connection will track the necessary information required to reuse queries without intervention. (The [fmtString] is
-  /// the unique identifier to look up reuse information.) You can disable reuse by passing false for [allowReuse].
+abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionContext {
+  Map<int, String> _tableOIDNameMap = {};
+
   Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true});
+    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
+    if (isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
 
-  /// Executes a query on this context.
-  ///
-  /// This method sends a SQL string to the database this instance is connected to. Parameters can be provided in [fmtString], see [query] for more details.
-  ///
-  /// This method returns the number of rows affected and no additional information. This method uses the least efficient and less secure command
-  /// for executing queries in the PostgreSQL protocol; [query] is preferred for queries that will be executed more than once, will contain user input,
-  /// or return rows.
-  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null});
+    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
+    if (allowReuse) {
+      query.statementIdentifier = _reuseIdentifierForQuery(query);
+    }
 
-  /// Cancels a transaction on this context.
-  ///
-  /// If this context is an instance of [PostgreSQLConnection], this method has no effect. If the context is a transaction context (passed as the argument
-  /// to [PostgreSQLConnection.transaction]), this will rollback the transaction.
-  void cancelTransaction({String reason: null});
+    return _enqueue(query);
+  }
+
+  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(String fmtString,
+    {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
+    if (isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
+    if (allowReuse) {
+      query.statementIdentifier = _reuseIdentifierForQuery(query);
+    }
+
+    final rows = await _enqueue(query);
+
+    return _mapifyRows(rows, query.fieldDescriptions);
+  }
+
+  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null}) {
+    if (isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+
+    var query = new Query<int>(fmtString, substitutionValues, this, null)..onlyReturnAffectedRowCount = true;
+
+    return _enqueue(query);
+  }
+
+  Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
+    List<List<dynamic>> rows, List<FieldDescription> columns) async {
+    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
+    // It's not a significant impact here, but an area for optimization. This includes
+    // assigning resolvedTableName
+    final tableOIDs = new Set.from(columns.map((f) => f.tableID));
+    final List<int> unresolvedTableOIDs = tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toList();
+    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
+
+    if (unresolvedTableOIDs.isNotEmpty) {
+      await _resolveTableOIDs(unresolvedTableOIDs);
+    }
+
+    columns.forEach((desc) {
+      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
+    });
+
+    final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
+    return rows.map((row) {
+      var rowMap = new Map.fromIterable(tableNames, key: (name) => name, value: (_) => {});
+
+      final iterator = columns.iterator;
+      row.forEach((column) {
+        iterator.moveNext();
+        rowMap[iterator.current.resolvedTableName][iterator.current.fieldName] = column;
+      });
+
+      return rowMap;
+    }).toList();
+  }
+
+  Future _resolveTableOIDs(List<int> oids) async {
+    final unresolvedIDString = oids.join(",");
+    final orderedTableNames =
+    await query("SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
+
+    final iterator = oids.iterator;
+    orderedTableNames.forEach((tableName) {
+      iterator.moveNext();
+      if (tableName.first != null) {
+        _tableOIDNameMap[iterator.current] = tableName.first;
+      }
+    });
+  }
+
+  Future<T> _enqueue<T>(Query<T> query) async {
+    _queryQueue.add(query);
+    _transitionToState(_connectionState.awake());
+
+    try {
+      final result = await query.future;
+      _cacheQuery(query);
+      _queryQueue.remove(query);
+      return result;
+    } catch (e) {
+      _cacheQuery(query);
+      _queryQueue.remove(query);
+      rethrow;
+    }
+  }
+
 }
 
 /// Instances of this class connect to and communicate with a PostgreSQL database.
 ///
 /// The primary type of this library, a connection is responsible for connecting to databases and executing queries.
 /// A connection may be opened with [open] after it is created.
-class PostgreSQLConnection implements PostgreSQLExecutionContext {
+class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionContext {
   /// Creates an instance of [PostgreSQLConnection].
   ///
   /// [host] must be a hostname, e.g. "foobar.com" or IP address. Do not include scheme or port.
@@ -132,8 +199,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   Socket _socket;
   MessageFramer _framer = new MessageFramer();
 
-  Map<int, String> _tableOIDNameMap = {};
-
   int _secretKey;
   List<int> _salt;
 
@@ -191,104 +256,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     return _cleanup();
   }
 
-  /// Executes a query on this connection.
-  ///
-  /// This method sends the query described by [fmtString] to the database and returns a [Future] whose value returned rows from the query after the query completes.
-  /// The format string may contain parameters that are provided in [substitutionValues]. Parameters are prefixed with the '@' character. Keys to replace the parameters
-  /// do not include the '@' character. For example:
-  ///
-  ///         connection.query("SELECT * FROM table WHERE id = @idParam", {"idParam" : 2});
-  ///
-  /// The type of the value is inferred by default, but can be made more specific by adding ':type" to the parameter pattern in the format string. The possible values
-  /// are declared as static variables in [PostgreSQLCodec] (e.g., [PostgreSQLCodec.TypeInt4]). For example:
-  ///
-  ///         connection.query("SELECT * FROM table WHERE id = @idParam:int4", {"idParam" : 2});
-  ///
-  /// You may also use [PostgreSQLFormat.id] to create parameter patterns.
-  ///
-  /// If successful, the returned [Future] completes with a [List] of rows. Each is row is represented by a [List] of column values for that row that were returned by the query.
-  ///
-  /// By default, instances of this class will reuse queries. This allows significantly more efficient transport to and from the database. You do not have to do
-  /// anything to opt in to this behavior, this connection will track the necessary information required to reuse queries without intervention. (The [fmtString] is
-  /// the unique identifier to look up reuse information.) You can disable reuse by passing false for [allowReuse].
-  ///
-  Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
-    if (allowReuse) {
-      query.statementIdentifier = _cache.identifierForQuery(query);
-    }
-
-    return _enqueue(query);
-  }
-
-  /// Executes a query on this connection and returns each row as a [Map].
-  ///
-  /// This method constructs and executes a query in the same way as [query], but returns each row as a [Map].
-  ///
-  /// (Note: this method will execute additional queries to resolve table names the first time a table is encountered. These table names are cached per instance of this type.)
-  ///
-  /// Each row map contains key-value pairs for every table in the query. The value is a [Map] that contains
-  /// key-value pairs for each column from that table. For example, consider
-  /// the following query:
-  ///
-  ///         SELECT employee.id, employee.name FROM employee;
-  ///
-  /// This method would return the following structure:
-  ///
-  ///         [
-  ///           {"employee" : {"name": "Bob", "id": 1}}
-  ///         ]
-  ///
-  /// The purpose of this nested structure is to disambiguate columns that have the same name in different tables. For example, consider a query with a SQL JOIN:
-  ///
-  ///         SELECT employee.id, employee.name, company.name FROM employee LEFT OUTER JOIN company ON employee.company_id=company.id;
-  ///
-  /// Each returned [Map] would contain `employee` and `company` keys. The `name` key would be present in both inner maps.
-  ///
-  ///       [
-  ///         {
-  ///           "employee": {"name": "Bob", "id": 1},
-  ///           "company: {"name": "stable|kernel"}
-  ///         }
-  ///       ]
-  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(String fmtString,
-      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true}) async {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, this, null);
-    if (allowReuse) {
-      query.statementIdentifier = _cache.identifierForQuery(query);
-    }
-
-    final rows = await _enqueue(query);
-
-    return _mapifyRows(rows, query.fieldDescriptions);
-  }
-
-  /// Executes a query on this connection.
-  ///
-  /// This method sends a SQL string to the database this instance is connected to. Parameters can be provided in [fmtString], see [query] for more details.
-  ///
-  /// This method returns the number of rows affected and no additional information. This method uses the least efficient and less secure command
-  /// for executing queries in the PostgreSQL protocol; [query] is preferred for queries that will be executed more than once, will contain user input,
-  /// or return rows.
-  Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null}) {
-    if (isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<int>(fmtString, substitutionValues, this, null)..onlyReturnAffectedRowCount = true;
-
-    return _enqueue(query);
-  }
-
   /// Executes a series of queries inside a transaction on this connection.
   ///
   /// Queries executed inside [queryBlock] will be grouped together in a transaction. The return value of the [queryBlock]
@@ -329,55 +296,10 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
   }
 
   void cancelTransaction({String reason: null}) {
-    // We aren't in a transaction if sent to PostgreSQLConnection instances, so this is a no-op.
+    // Default is no-op
   }
 
   ////////
-
-  Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
-      List<List<dynamic>> rows, List<FieldDescription> columns) async {
-    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
-    // It's not a significant impact here, but an area for optimization. This includes
-    // assigning resolvedTableName
-    final tableOIDs = new Set.from(columns.map((f) => f.tableID));
-    final List<int> unresolvedTableOIDs = tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toList();
-    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
-
-    if (unresolvedTableOIDs.isNotEmpty) {
-      await _resolveTableOIDs(unresolvedTableOIDs);
-    }
-
-    columns.forEach((desc) {
-      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
-    });
-
-    final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
-    return rows.map((row) {
-      var rowMap = new Map.fromIterable(tableNames, key: (name) => name, value: (_) => {});
-
-      final iterator = columns.iterator;
-      row.forEach((column) {
-        iterator.moveNext();
-        rowMap[iterator.current.resolvedTableName][iterator.current.fieldName] = column;
-      });
-
-      return rowMap;
-    }).toList();
-  }
-
-  Future _resolveTableOIDs(List<int> oids) async {
-    final unresolvedIDString = oids.join(",");
-    final orderedTableNames =
-        await query("SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
-
-    final iterator = oids.iterator;
-    orderedTableNames.forEach((tableName) {
-      iterator.moveNext();
-      if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = tableName.first;
-      }
-    });
-  }
 
   void _timeout() {
     _connectionState = new _PostgreSQLConnectionStateClosed();
@@ -386,23 +308,6 @@ class PostgreSQLConnection implements PostgreSQLExecutionContext {
     _cancelCurrentQueries();
     _cleanup();
     throw new PostgreSQLException("Timed out trying to connect to database postgres://$host:$port/$databaseName.");
-  }
-
-  Future<T> _enqueue<T>(Query<T> query) async {
-    _queryQueue.add(query);
-    _transitionToState(_connectionState.awake());
-
-    var result = null;
-    try {
-      result = await query.future;
-      _cache.add(query);
-      _queryQueue.remove(query);
-    } catch (e) {
-      _queryQueue.remove(query);
-      rethrow;
-    }
-
-    return result;
   }
 
   void _cancelCurrentQueries([Object error, StackTrace stackTrace]) {
