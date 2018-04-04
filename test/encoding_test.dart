@@ -166,7 +166,6 @@ void main() {
       } on FormatException catch (e) {
         expect(e.toString(), contains("Expected: DateTime"));
       }
-
     });
 
     test("jsonb", () async {
@@ -331,11 +330,35 @@ void main() {
     expect(v.hasCachedBytes, true);
   });
 
-  test("Encode UUID", () {
-    expect(PostgreSQLCodec.encode("00000000-0000-0000-0000-000000000000", dataType: PostgreSQLDataType.uuid),
-      "'00000000-0000-0000-0000-000000000000'");
-    expect(PostgreSQLCodec.encode("ffffffff-ffff-ffff-ffff-ffffffffffff", dataType: PostgreSQLDataType.uuid),
-      "'ffffffff-ffff-ffff-ffff-ffffffffffff'");
+  test("Invalid UUID encoding", () {
+    final converter = new PostgresBinaryEncoder(PostgreSQLDataType.uuid);
+    try {
+      converter.convert("z0000000-0000-0000-0000-000000000000");
+      fail('unreachable');
+    } on FormatException catch (e) {
+      expect(e.toString(), contains("Invalid UUID string"));
+    }
+
+    try {
+      converter.convert(123123);
+      fail('unreachable');
+    } on FormatException catch (e) {
+      expect(e.toString(), contains("Invalid type for parameter"));
+    }
+
+    try {
+      converter.convert("0000000-0000-0000-0000-000000000000");
+      fail('unreachable');
+    } on FormatException catch (e) {
+      expect(e.toString(), contains("Invalid UUID string"));
+    }
+
+    try {
+      converter.convert("00000000-0000-0000-0000-000000000000f");
+      fail('unreachable');
+    } on FormatException catch (e) {
+      expect(e.toString(), contains("Invalid type for parameter"));
+    }
   });
 }
 
