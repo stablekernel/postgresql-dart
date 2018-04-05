@@ -45,6 +45,8 @@ class PostgreSQLFormat {
         return "bytea";
       case PostgreSQLDataType.name:
         return "name";
+      case PostgreSQLDataType.uuid:
+        return "uuid";
     }
 
     return null;

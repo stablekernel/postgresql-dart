@@ -252,6 +252,7 @@ class PostgreSQLFormatToken {
 }
 
 class PostgreSQLFormatIdentifier {
+
   static Map<String, PostgreSQLDataType> typeStringToCodeMap = {
     "text": PostgreSQLDataType.text,
     "int2": PostgreSQLDataType.smallInteger,
@@ -265,7 +266,8 @@ class PostgreSQLFormatIdentifier {
     "timestamptz": PostgreSQLDataType.timestampWithTimezone,
     "jsonb": PostgreSQLDataType.json,
     "bytea": PostgreSQLDataType.byteArray,
-    "name": PostgreSQLDataType.name
+    "name": PostgreSQLDataType.name,
+    "uuid": PostgreSQLDataType.uuid
   };
 
   PostgreSQLFormatIdentifier(String t) {

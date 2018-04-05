@@ -60,5 +60,11 @@ enum PostgreSQLDataType {
   /// Must be a [String]
   ///
   /// Used for internal pg structure names
-  name
+  name,
+
+  /// Must be a [String].
+  ///
+  /// Must contain 32 hexadecimal characters. May contain any number of '-' characters.
+  /// When returned from database, format will be xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
+  uuid
 }
