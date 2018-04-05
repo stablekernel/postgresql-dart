@@ -24,9 +24,9 @@ class PostgreSQLFormat {
       case PostgreSQLDataType.bigInteger:
         return "int8";
       case PostgreSQLDataType.serial:
-        return "serial";
+        return "int4";
       case PostgreSQLDataType.bigSerial:
-        return "bigserial";
+        return "int8";
       case PostgreSQLDataType.real:
         return "float4";
       case PostgreSQLDataType.double:

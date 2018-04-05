@@ -408,7 +408,7 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
     orderedTableNames.forEach((tableName) {
       iterator.moveNext();
       if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = convert.utf8.decode(tableName.first);
+        _tableOIDNameMap[iterator.current] = tableName.first;
       }
     });
   }
