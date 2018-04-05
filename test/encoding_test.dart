@@ -181,7 +181,7 @@ void main() {
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:jsonb)", substitutionValues: {"v": new DateTime.now()});
         fail('unreachable');
-      } on JsonUnsupportedObjectError catch (e) {}
+      } on JsonUnsupportedObjectError catch (_) {}
     });
 
     test("bytea", () async {
@@ -357,7 +357,7 @@ void main() {
       converter.convert("00000000-0000-0000-0000-000000000000f");
       fail('unreachable');
     } on FormatException catch (e) {
-      expect(e.toString(), contains("Invalid type for parameter"));
+      expect(e.toString(), contains("Invalid UUID string"));
     }
   });
 }
