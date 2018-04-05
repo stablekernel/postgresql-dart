@@ -55,5 +55,10 @@ enum PostgreSQLDataType {
   /// Must be a [List] of [int].
   ///
   /// Each element of the list must fit into a byte (0-255).
-  byteArray
+  byteArray,
+
+  /// Must be a [String]
+  ///
+  /// Used for internal pg structure names
+  name
 }

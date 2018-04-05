@@ -24,9 +24,9 @@ class PostgreSQLFormat {
       case PostgreSQLDataType.bigInteger:
         return "int8";
       case PostgreSQLDataType.serial:
-        return "int4";
+        return "serial";
       case PostgreSQLDataType.bigSerial:
-        return "int8";
+        return "bigserial";
       case PostgreSQLDataType.real:
         return "float4";
       case PostgreSQLDataType.double:
@@ -43,6 +43,8 @@ class PostgreSQLFormat {
         return "jsonb";
       case PostgreSQLDataType.byteArray:
         return "bytea";
+      case PostgreSQLDataType.name:
+        return "name";
     }
 
     return null;

@@ -266,7 +266,8 @@ class PostgreSQLFormatIdentifier {
     "timestamp": PostgreSQLDataType.timestampWithoutTimezone,
     "timestamptz": PostgreSQLDataType.timestampWithTimezone,
     "jsonb": PostgreSQLDataType.json,
-    "bytea": PostgreSQLDataType.byteArray
+    "bytea": PostgreSQLDataType.byteArray,
+    "name": PostgreSQLDataType.name
   };
 
   PostgreSQLFormatIdentifier(String t) {

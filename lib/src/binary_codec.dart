@@ -63,6 +63,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
         bd.setInt16(0, value);
         return bd.buffer.asUint8List();
       }
+      case PostgreSQLDataType.name:
       case PostgreSQLDataType.text: {
         if (value is! String) {
           throw new FormatException(
@@ -173,6 +174,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     final buffer = new ByteData.view(value.buffer, value.offsetInBytes, value.lengthInBytes);
 
     switch (dataType) {
+      case PostgreSQLDataType.name:
       case PostgreSQLDataType.text:
         return UTF8.decode(value.buffer.asUint8List(value.offsetInBytes, value.lengthInBytes));
       case PostgreSQLDataType.boolean:
@@ -206,6 +208,8 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
 
       case PostgreSQLDataType.byteArray:
         return value.buffer.asUint8List(value.offsetInBytes, value.lengthInBytes);
+
+
     }
 
     return value;
@@ -214,6 +218,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
   static final Map<int, PostgreSQLDataType> typeMap = {
     16: PostgreSQLDataType.boolean,
     17: PostgreSQLDataType.byteArray,
+    19: PostgreSQLDataType.name,
     20: PostgreSQLDataType.bigInteger,
     21: PostgreSQLDataType.smallInteger,
     23: PostgreSQLDataType.integer,
@@ -223,6 +228,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     1082: PostgreSQLDataType.date,
     1114: PostgreSQLDataType.timestampWithoutTimezone,
     1184: PostgreSQLDataType.timestampWithTimezone,
-    3802: PostgreSQLDataType.json
+    3802: PostgreSQLDataType.json,
+
   };
 }
