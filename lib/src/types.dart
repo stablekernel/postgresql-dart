@@ -52,7 +52,7 @@ enum PostgreSQLDataType {
   /// Values will be encoded via [JSON.encode] before being sent to the database.
   json,
 
-  /// Must be a [List<int>].
+  /// Must be a [List] of [int].
   ///
   /// Each element of the list must fit into a byte (0-255).
   byteArray
