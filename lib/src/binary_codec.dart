@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'dart:typed_data';
 
+import 'package:dart2_constant/convert.dart' as _convert;
 import 'package:postgres/postgres.dart';
 import 'package:postgres/src/types.dart';
 
@@ -269,7 +270,15 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
         }
     }
 
-    return value;
+    // We'll try and decode this as a utf8 string and return that
+    // for many internal types, this is valid. If it fails,
+    // we just return the bytes and let the caller figure out what to
+    // do with it.
+    try {
+      return _convert.utf8.decode(value);
+    } catch (_) {
+      return value;
+    }
   }
 
   static final Map<int, PostgreSQLDataType> typeMap = {
