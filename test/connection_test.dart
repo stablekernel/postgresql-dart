@@ -508,11 +508,10 @@ void main() {
     test("SSL Connection that times out triggers future for pending queries", () async {
       var openCompleter = new Completer();
       serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
-      StreamSubscription listener;
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
-        listener = s.listen((bytes) {});
+        s.listen((bytes) {});
         new Future.delayed(new Duration(milliseconds: 100), () {
           openCompleter.complete();
         });
