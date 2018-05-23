@@ -20,7 +20,6 @@ class Query<T> {
   bool onlyReturnAffectedRowCount = false;
 
   String statementIdentifier;
-  Completer<dynamic> _onComplete = new Completer.sync();
 
   Future<T> get future => _onComplete.future;
 
@@ -30,7 +29,11 @@ class Query<T> {
   final PostgreSQLConnection connection;
 
   List<PostgreSQLDataType> specifiedParameterTypeCodes;
+  List<List<dynamic>> rows = [];
 
+  CachedQuery cache;
+
+  Completer<T> _onComplete = new Completer.sync();
   List<FieldDescription> _fieldDescriptions;
 
   List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
@@ -39,10 +42,6 @@ class Query<T> {
     _fieldDescriptions = fds;
     cache?.fieldDescriptions = fds;
   }
-
-  List<dynamic> rows = [];
-
-  CachedQuery cache;
 
   void sendSimple(Socket socket) {
     var sqlString = PostgreSQLFormat.substitute(statement, substitutionValues);
@@ -136,11 +135,11 @@ class Query<T> {
 
   void complete(int rowsAffected) {
     if (onlyReturnAffectedRowCount) {
-      _onComplete.complete(rowsAffected);
+      _onComplete.complete(rowsAffected as T);
       return;
     }
 
-    _onComplete.complete(rows);
+    _onComplete.complete(rows as T);
   }
 
   void completeError(dynamic error, [StackTrace stackTrace]) {

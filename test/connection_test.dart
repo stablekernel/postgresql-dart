@@ -91,18 +91,22 @@ void main() {
       await conn.open();
 
       var errors = [];
+      final catcher = (e) {
+        errors.add(e);
+        return null;
+      };
       var futures = [
-        conn.query("select 1", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 2", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 3", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 4", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 5", allowReuse: false).catchError((e) => errors.add(e)),
+        conn.query("select 1", allowReuse: false).catchError(catcher),
+        conn.query("select 2", allowReuse: false).catchError(catcher),
+        conn.query("select 3", allowReuse: false).catchError(catcher),
+        conn.query("select 4", allowReuse: false).catchError(catcher),
+        conn.query("select 5", allowReuse: false).catchError(catcher),
       ];
 
       await conn.close();
       await Future.wait(futures);
       expect(errors.length, 5);
-      expect(errors.map((e) => e.message), everyElement(contains("Connection closed")));
+      expect(errors.map((e) => e.message), everyElement(contains("Query cancelled")));
     });
 
     test(
@@ -112,18 +116,22 @@ void main() {
       await conn.open();
 
       var errors = [];
+      final catcher = (e) {
+        errors.add(e);
+        return null;
+      };
       var futures = [
-        conn.query("select 1", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 2", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 3", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 4", allowReuse: false).catchError((e) => errors.add(e)),
-        conn.query("select 5", allowReuse: false).catchError((e) => errors.add(e)),
+        conn.query("select 1", allowReuse: false).catchError(catcher),
+        conn.query("select 2", allowReuse: false).catchError(catcher),
+        conn.query("select 3", allowReuse: false).catchError(catcher),
+        conn.query("select 4", allowReuse: false).catchError(catcher),
+        conn.query("select 5", allowReuse: false).catchError(catcher),
       ];
 
       await conn.close();
       await Future.wait(futures);
       expect(errors.length, 5);
-      expect(errors.map((e) => e.message), everyElement(contains("Connection closed")));
+      expect(errors.map((e) => e.message), everyElement(contains("Query cancelled")));
     });
   });
 
@@ -200,14 +208,16 @@ void main() {
 
   group("Unintended user-error situations", () {
     PostgreSQLConnection conn = null;
+    Future openFuture;
 
     tearDown(() async {
+      await openFuture;
       await conn?.close();
     });
 
     test("Sending queries to opening connection triggers error", () async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test", username: "darttrust");
-      conn.open();
+      openFuture = conn.open();
 
       try {
         await conn.execute("select 1");
@@ -219,7 +229,7 @@ void main() {
 
     test("SSL Sending queries to opening connection triggers error", () async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test", username: "darttrust", useSSL: true);
-      conn.open();
+      openFuture = conn.open();
 
       try {
         await conn.execute("select 1");
@@ -231,7 +241,7 @@ void main() {
 
     test("Starting transaction while opening connection triggers error", () async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test", username: "darttrust");
-      conn.open();
+      openFuture = conn.open();
 
       try {
         await conn.transaction((ctx) async {
@@ -245,7 +255,7 @@ void main() {
 
     test("SSL Starting transaction while opening connection triggers error", () async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test", username: "darttrust", useSSL: true);
-      conn.open();
+      openFuture = conn.open();
 
       try {
         await conn.transaction((ctx) async {
@@ -446,9 +456,8 @@ void main() {
 
       try {
         await conn.open();
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("Timed out trying to connect"));
-      }
+        fail('unreachable');
+      } on TimeoutException {}
 
       await expectConnectionIsInvalid(conn);
     });
@@ -465,9 +474,8 @@ void main() {
 
       try {
         await conn.open();
-      } on PostgreSQLException catch (e) {
-        expect(e.message, contains("Timed out trying to connect"));
-      }
+        fail('unreachable');
+      } on TimeoutException {}
 
       await expectConnectionIsInvalid(conn);
     });
@@ -493,24 +501,25 @@ void main() {
         await conn.execute("select 1");
         expect(true, false);
       } on PostgreSQLException catch (e) {
-        expect(e.message, contains("closed or query cancelled"));
+        expect(e.message, contains("Failed to connect"));
       }
     });
 
     test("SSL Connection that times out triggers future for pending queries", () async {
       var openCompleter = new Completer();
       serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
+      StreamSubscription listener;
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
-        s.listen((bytes) {});
+        listener = s.listen((bytes) {});
         new Future.delayed(new Duration(milliseconds: 100), () {
           openCompleter.complete();
         });
       });
 
       var conn = new PostgreSQLConnection("localhost", 5433, "dart_test", timeoutInSeconds: 2, useSSL: true);
-      conn.open().catchError((e) {});
+      conn.open().catchError((e) { return null;});
 
       await openCompleter.future;
 

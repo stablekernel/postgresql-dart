@@ -236,7 +236,6 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
 
     if (message is ReadyForQueryMessage) {
       if (message.state == ReadyForQueryMessage.StateTransactionError) {
-        // This should cancel the transaction, we may have to send a commit here
         query.completeError(returningException);
         return new _PostgreSQLConnectionStateTransactionFailure(query.transaction);
       }
