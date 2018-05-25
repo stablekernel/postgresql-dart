@@ -220,8 +220,12 @@ void main() {
       var transactionError;
       await conn.transaction((ctx) async {
         ctx.query("INSERT INTO t (id) VALUES (1)");
-        ctx.query("INSERT INTO t (id) VALUES ('foo')").catchError((e) { failingQueryError = e;});
-        ctx.query("INSERT INTO t (id) VALUES (2)").catchError((e) { pendingQueryError = e; });
+        ctx.query("INSERT INTO t (id) VALUES ('foo')").catchError((e) {
+          failingQueryError = e;
+        });
+        ctx.query("INSERT INTO t (id) VALUES (2)").catchError((e) {
+          pendingQueryError = e;
+        });
       }).catchError((e) => transactionError = e);
       expect(transactionError, isNotNull);
       expect(failingQueryError.toString(), contains("invalid input"));
@@ -231,16 +235,17 @@ void main() {
     });
 
     test("A transaction with a rollback and non-await queries rolls back transaction", () async {
-      var future;
       var errs = [];
       await conn.transaction((ctx) async {
-        ctx.query("INSERT INTO t (id) VALUES (1)").catchError((e) { errs.add(e);});
-        ctx.query("INSERT INTO t (id) VALUES (2)").catchError((e) { errs.add(e);});
+        ctx.query("INSERT INTO t (id) VALUES (1)").catchError((e) {
+          errs.add(e);
+        });
+        ctx.query("INSERT INTO t (id) VALUES (2)").catchError((e) {
+          errs.add(e);
+        });
         ctx.cancelTransaction();
-        future = ctx.query("INSERT INTO t (id) VALUES (3)");
+        ctx.query("INSERT INTO t (id) VALUES (3)").catchError((e) {});
       });
-
-      expect(await future, isNull);
 
       var total = await conn.query("SELECT id FROM t");
       expect(total, []);

@@ -4,8 +4,6 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart2_constant/convert.dart' as convert;
-
 import 'package:postgres/src/query_cache.dart';
 import 'package:postgres/src/execution_context.dart';
 import 'package:postgres/src/query_queue.dart';
@@ -158,10 +156,7 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
   /// the transaction will fail and previous statements within the transaction will not be committed. The [Future]
   /// returned from this method will be completed with the error from the first failing query.
   ///
-  /// Do not catch exceptions within a transaction block, as it will prevent the transaction exception handler from fulfilling a
-  /// transaction.
-  ///
-  /// Transactions may be cancelled by issuing [PostgreSQLExecutionContext.cancelTransaction]
+  /// Transactions may be cancelled by invoking [PostgreSQLExecutionContext.cancelTransaction]
   /// within the transaction. This will cause this method to return a [Future] with a value of [PostgreSQLRollback]. This method does not throw an exception
   /// if the transaction is cancelled in this way.
   ///

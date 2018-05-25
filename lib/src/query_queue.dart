@@ -47,7 +47,7 @@ class QueryQueue extends ListBase<Query<dynamic>> implements List<Query<dynamic>
   @override
   void operator []=(int index, Query value) => _inner[index] = value;
 
-  void insertIfCancelled(Query element) {
+  void addEvenIfCancelled(Query element) {
     _inner.add(element);
   }
 

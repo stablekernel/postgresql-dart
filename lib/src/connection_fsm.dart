@@ -232,12 +232,12 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     // We ignore NoData, as it doesn't tell us anything we don't already know
     // or care about.
 
-    // print("(${query.statement}) -> $message");
+     // print("(${query.statement}) -> $message");
 
     if (message is ReadyForQueryMessage) {
       if (message.state == ReadyForQueryMessage.StateTransactionError) {
         query.completeError(returningException);
-        return new _PostgreSQLConnectionStateTransactionFailure(query.transaction);
+        return new _PostgreSQLConnectionStateReadyInTransaction(query.transaction);
       }
 
       if (returningException != null) {
@@ -303,25 +303,10 @@ class _PostgreSQLConnectionStateReadyInTransaction extends _PostgreSQLConnection
     } catch (e, st) {
       scheduleMicrotask(() {
         q.completeError(e, st);
-        connection._transitionToState(new _PostgreSQLConnectionStateTransactionFailure(transaction));
       });
 
-      return new _PostgreSQLConnectionStateDeferredFailure();
+      return this;
     }
-  }
-}
-
-/*
-  Transaction error state
- */
-
-class _PostgreSQLConnectionStateTransactionFailure extends _PostgreSQLConnectionState {
-  _PostgreSQLConnectionStateTransactionFailure(this.transaction);
-
-  _TransactionProxy transaction;
-
-  _PostgreSQLConnectionState awake() {
-    return new _PostgreSQLConnectionStateReadyInTransaction(transaction);
   }
 }
 

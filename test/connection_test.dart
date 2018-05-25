@@ -445,7 +445,7 @@ void main() {
     });
 
     test("Connection that times out throws appropriate error and cannot be reused", () async {
-      serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
+      serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
@@ -463,7 +463,7 @@ void main() {
     });
 
     test("SSL Connection that times out throws appropriate error and cannot be reused", () async {
-      serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
+      serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
@@ -482,7 +482,7 @@ void main() {
 
     test("Connection that times out triggers future for pending queries", () async {
       var openCompleter = new Completer();
-      serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
+      serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
@@ -507,7 +507,7 @@ void main() {
 
     test("SSL Connection that times out triggers future for pending queries", () async {
       var openCompleter = new Completer();
-      serverSocket = await ServerSocket.bind(InternetAddress.LOOPBACK_IP_V4, 5433);
+      serverSocket = await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose

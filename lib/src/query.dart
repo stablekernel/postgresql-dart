@@ -3,8 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'package:dart2_constant/convert.dart' as convert;
-
 import 'package:postgres/src/binary_codec.dart';
 import 'package:postgres/src/execution_context.dart';
 
@@ -134,6 +132,10 @@ class Query<T> {
   }
 
   void complete(int rowsAffected) {
+    if (_onComplete.isCompleted) {
+      return;
+    }
+
     if (onlyReturnAffectedRowCount) {
       _onComplete.complete(rowsAffected as T);
       return;
@@ -143,6 +145,10 @@ class Query<T> {
   }
 
   void completeError(dynamic error, [StackTrace stackTrace]) {
+    if (_onComplete.isCompleted) {
+      return;
+    }
+
     _onComplete.completeError(error, stackTrace);
   }
 
@@ -179,7 +185,7 @@ class ParameterValue {
   ParameterValue.text(dynamic value) : isBinary = false {
     if (value != null) {
       final converter = new PostgresTextEncoder(false);
-      bytes = convert.utf8.encode(converter.convert(value));
+      bytes = utf8.encode(converter.convert(value));
     }
     length = bytes?.length;
   }
