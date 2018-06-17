@@ -13,9 +13,12 @@ import 'substituter.dart';
 import 'client_messages.dart';
 
 class Query<T> {
-  Query(this.statement, this.substitutionValues, this.connection, this.transaction);
+  Query(this.statement, this.substitutionValues, this.connection,
+      this.transaction,
+      {this.onlyReturnAffectedRowCount: false, EventSink rowSink})
+      : _rowSink = rowSink;
 
-  bool onlyReturnAffectedRowCount = false;
+  final bool onlyReturnAffectedRowCount;
 
   String statementIdentifier;
 
@@ -27,7 +30,8 @@ class Query<T> {
   final PostgreSQLConnection connection;
 
   List<PostgreSQLDataType> specifiedParameterTypeCodes;
-  List<List<dynamic>> rows = [];
+  final EventSink _rowSink;
+  final _rows = <List<dynamic>>[];
 
   CachedQuery cache;
 
@@ -127,28 +131,34 @@ class Query<T> {
 
       return iterator.current.converter.convert(bd?.buffer?.asUint8List(bd.offsetInBytes, bd.lengthInBytes));
     });
+    final row = lazyDecodedData.toList();
 
-    rows.add(lazyDecodedData.toList());
+    if (_rowSink == null) {
+      _rows.add(row);
+    } else {
+      _rowSink.add(row);
+    }
   }
 
   void complete(int rowsAffected) {
     if (_onComplete.isCompleted) {
       return;
     }
+    _rowSink?.close();
 
     if (onlyReturnAffectedRowCount) {
       _onComplete.complete(rowsAffected as T);
-      return;
+    } else {
+      _onComplete.complete(_rows as T);
     }
-
-    _onComplete.complete(rows as T);
   }
 
   void completeError(dynamic error, [StackTrace stackTrace]) {
     if (_onComplete.isCompleted) {
       return;
     }
-
+    _rowSink?.addError(error, stackTrace);
+    _rowSink?.close();
     _onComplete.completeError(error, stackTrace);
   }
 
