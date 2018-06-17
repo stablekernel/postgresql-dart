@@ -303,17 +303,8 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
   PostgreSQLExecutionContext get _transaction;
 
   Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true, int timeoutInSeconds: 30}) async {
-    if (_connection.isClosed) {
-      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
-    }
-
-    var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues, _connection, _transaction);
-    if (allowReuse) {
-      query.statementIdentifier = _connection._cache.identifierForQuery(query);
-    }
-
-    return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true, int timeoutInSeconds: 30}) {
+    return stream(fmtString, substitutionValues: substitutionValues, allowReuse: allowReuse, timeoutInSeconds: timeoutInSeconds).toList();
   }
 
   Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(String fmtString,
@@ -330,6 +321,30 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
     final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
 
     return _mapifyRows(rows, query.fieldDescriptions);
+  }
+
+  Stream<List<dynamic>> stream(String fmtString,
+      {Map<String, dynamic> substitutionValues: null, bool allowReuse: true, int timeoutInSeconds: 30}) {
+    if (_connection.isClosed) {
+      throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
+    }
+    StreamController<List<dynamic>> controller;
+    controller = StreamController<List<dynamic>>(sync: true, onListen: () {
+      var query = new Query<List<List<dynamic>>>(fmtString, substitutionValues,
+          _connection, _transaction, rowSink: controller.sink);
+      if (allowReuse) {
+        query.statementIdentifier = _connection._cache.identifierForQuery(query);
+      }
+      final doneFuture = _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+      doneFuture.then((result) {
+        if (!controller.isClosed) {
+          // TODO: log the inconsistency
+          controller.close();
+        }
+      });
+    });
+
+    return controller.stream;
   }
 
   Future<int> execute(String fmtString, {Map<String, dynamic> substitutionValues: null, int timeoutInSeconds: 30}) {
