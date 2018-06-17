@@ -27,7 +27,7 @@ class Query<T> {
   final PostgreSQLConnection connection;
 
   List<PostgreSQLDataType> specifiedParameterTypeCodes;
-  List<List<dynamic>> rows = [];
+  final _rows = <List<dynamic>>[];
 
   CachedQuery cache;
 
@@ -128,7 +128,7 @@ class Query<T> {
       return iterator.current.converter.convert(bd?.buffer?.asUint8List(bd.offsetInBytes, bd.lengthInBytes));
     });
 
-    rows.add(lazyDecodedData.toList());
+    _rows.add(lazyDecodedData.toList());
   }
 
   void complete(int rowsAffected) {
@@ -141,7 +141,7 @@ class Query<T> {
       return;
     }
 
-    _onComplete.complete(rows as T);
+    _onComplete.complete(_rows as T);
   }
 
   void completeError(dynamic error, [StackTrace stackTrace]) {
