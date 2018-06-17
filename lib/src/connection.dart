@@ -337,8 +337,8 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
       throw new PostgreSQLException("Attempting to execute query, but connection is not open.");
     }
 
-    var query = new Query<int>(fmtString, substitutionValues, _connection, _transaction)
-      ..onlyReturnAffectedRowCount = true;
+    var query = new Query<int>(fmtString, substitutionValues, _connection,
+        _transaction, onlyReturnAffectedRowCount: true);
 
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
   }

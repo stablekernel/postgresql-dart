@@ -13,9 +13,11 @@ import 'substituter.dart';
 import 'client_messages.dart';
 
 class Query<T> {
-  Query(this.statement, this.substitutionValues, this.connection, this.transaction);
+  Query(this.statement, this.substitutionValues, this.connection,
+      this.transaction,
+      {this.onlyReturnAffectedRowCount: false});
 
-  bool onlyReturnAffectedRowCount = false;
+  final bool onlyReturnAffectedRowCount;
 
   String statementIdentifier;
 
