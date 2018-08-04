@@ -1,8 +1,6 @@
 #!/bin/bash
 set -e
 
-export DART_VM_OPTIONS=--preview-dart-2
-
 pub run test -j 1 -r expanded
 
 export DART_VM_OPTIONS=""
