@@ -1,7 +1,7 @@
 language: dart
 sudo: required
 dart:
-  - stable/raw/2.0.0
+  - stable
 addons:
   postgresql: "9.6"
 services:
