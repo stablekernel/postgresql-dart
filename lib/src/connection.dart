@@ -351,9 +351,8 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
     final tableOIDs = new Set<int>.from(columns.map((f) => f.tableID));
-    final List<int> unresolvedTableOIDs =
-        tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toList();
-    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
+    final Set<int> unresolvedTableOIDs =
+        tableOIDs.where((oid) => oid != null && !_tableOIDNameMap.containsKey(oid)).toSet();
 
     if (unresolvedTableOIDs.isNotEmpty) {
       await _resolveTableOIDs(unresolvedTableOIDs);
@@ -378,8 +377,7 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
     }).toList();
   }
 
-  Future _resolveTableOIDs(List<int> oids) async {
-    final unresolvedOids = oids.toSet();
+  Future _resolveTableOIDs(Set<int> oids) async {
     final unresolvedIDString = oids.join(",");
     final orderedTableNames = await query(
         "SELECT oid, relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
@@ -388,10 +386,10 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
       final int oid = list[0];
       final String name = list[1];
       _tableOIDNameMap[oid] = name;
-      unresolvedOids.remove(oid);
+      oids.remove(oid);
     }
     // Make sure that the oid has a key in the map, and won't call resolve next time.
-    unresolvedOids.forEach((oid) {
+    oids.forEach((oid) {
       _tableOIDNameMap[oid] = null;
     });
   }
