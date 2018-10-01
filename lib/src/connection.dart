@@ -379,11 +379,11 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
   }
 
   Future _resolveTableOIDs(List<int> oids) async {
+    final unresolvedOids = oids.toSet();
     final unresolvedIDString = oids.join(",");
     final orderedTableNames = await query(
         "SELECT oid, relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
 
-    final unresolvedOids = oids.toSet();
     for (List list in orderedTableNames) {
       final int oid = list[0];
       final String name = list[1];
