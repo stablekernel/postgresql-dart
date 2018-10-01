@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1-dev
+
+- Better `oid`->`relname` resolution.
+
 ## 1.0.0
 
 - Adds support for Dart 2

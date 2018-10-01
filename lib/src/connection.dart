@@ -380,15 +380,19 @@ abstract class _PostgreSQLExecutionContextMixin implements PostgreSQLExecutionCo
 
   Future _resolveTableOIDs(List<int> oids) async {
     final unresolvedIDString = oids.join(",");
-    final orderedTableNames =
-        await query("SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
+    final orderedTableNames = await query(
+        "SELECT oid, relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
 
-    final iterator = oids.iterator;
-    orderedTableNames.forEach((tableName) {
-      iterator.moveNext();
-      if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = tableName.first;
-      }
+    final unresolvedOids = oids.toSet();
+    for (List list in orderedTableNames) {
+      final int oid = list[0];
+      final String name = list[1];
+      _tableOIDNameMap[oid] = name;
+      unresolvedOids.remove(oid);
+    }
+    // Make sure that the oid has a key in the map, and won't call resolve next time.
+    unresolvedOids.forEach((oid) {
+      _tableOIDNameMap[oid] = null;
     });
   }
 
