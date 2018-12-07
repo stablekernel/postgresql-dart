@@ -134,7 +134,7 @@ class MessageFrame {
 
 class MessageFramer {
   MessageFrame messageInProgress = new MessageFrame();
-  Queue<MessageFrame> messageQueue = new Queue<MessageFrame>();
+  final messageQueue = new Queue<MessageFrame>();
 
   void addBytes(Uint8List bytes) {
     var offsetIntoBytesRead = 0;
