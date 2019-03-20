@@ -149,10 +149,10 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
         {
           if (value is! String) {
             throw FormatException(
-                "Invalid type for parameter value. Expected: String Got: ${value.runtimeType}");
+                'Invalid type for parameter value. Expected: String Got: ${value.runtimeType}');
           }
 
-          final dashUnit = "-".codeUnits.first;
+          final dashUnit = '-'.codeUnits.first;
           final hexBytes = (value as String)
               .toLowerCase()
               .codeUnits
@@ -171,7 +171,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
             }
 
             throw FormatException(
-                "Invalid UUID string. Contains non-hexadecimal character (0-9 and a-f).");
+                'Invalid UUID string. Contains non-hexadecimal character (0-9 and a-f).');
           };
 
           final outBuffer = Uint8List(16);
@@ -185,7 +185,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
         }
     }
 
-    throw PostgreSQLException("Unsupported datatype");
+    throw PostgreSQLException('Unsupported datatype');
   }
 }
 
@@ -246,7 +246,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
 
       case PostgreSQLDataType.uuid:
         {
-          final codeDash = "-".codeUnitAt(0);
+          final codeDash = '-'.codeUnitAt(0);
 
           final cipher = [
             '0',

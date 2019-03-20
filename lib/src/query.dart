@@ -65,7 +65,7 @@ class Query<T> {
         replace: (PostgreSQLFormatIdentifier identifier, int index) {
       formatIdentifiers.add(identifier);
 
-      return "\$$index";
+      return '\$$index';
     });
 
     specifiedParameterTypeCodes = formatIdentifiers.map((i) => i.type).toList();
@@ -261,7 +261,7 @@ class FieldDescription {
 
   @override
   String toString() {
-    return "$fieldName $tableID $columnID $typeID $dataTypeSize $typeModifier $formatCode";
+    return '$fieldName $tableID $columnID $typeID $dataTypeSize $typeModifier $formatCode';
   }
 }
 
@@ -279,29 +279,29 @@ class PostgreSQLFormatToken {
 
 class PostgreSQLFormatIdentifier {
   static Map<String, PostgreSQLDataType> typeStringToCodeMap = {
-    "text": PostgreSQLDataType.text,
-    "int2": PostgreSQLDataType.smallInteger,
-    "int4": PostgreSQLDataType.integer,
-    "int8": PostgreSQLDataType.bigInteger,
-    "float4": PostgreSQLDataType.real,
-    "float8": PostgreSQLDataType.double,
-    "boolean": PostgreSQLDataType.boolean,
-    "date": PostgreSQLDataType.date,
-    "timestamp": PostgreSQLDataType.timestampWithoutTimezone,
-    "timestamptz": PostgreSQLDataType.timestampWithTimezone,
-    "jsonb": PostgreSQLDataType.json,
-    "bytea": PostgreSQLDataType.byteArray,
-    "name": PostgreSQLDataType.name,
-    "uuid": PostgreSQLDataType.uuid
+    'text': PostgreSQLDataType.text,
+    'int2': PostgreSQLDataType.smallInteger,
+    'int4': PostgreSQLDataType.integer,
+    'int8': PostgreSQLDataType.bigInteger,
+    'float4': PostgreSQLDataType.real,
+    'float8': PostgreSQLDataType.double,
+    'boolean': PostgreSQLDataType.boolean,
+    'date': PostgreSQLDataType.date,
+    'timestamp': PostgreSQLDataType.timestampWithoutTimezone,
+    'timestamptz': PostgreSQLDataType.timestampWithTimezone,
+    'jsonb': PostgreSQLDataType.json,
+    'bytea': PostgreSQLDataType.byteArray,
+    'name': PostgreSQLDataType.name,
+    'uuid': PostgreSQLDataType.uuid
   };
 
   PostgreSQLFormatIdentifier(String t) {
-    final components = t.split("::");
+    final components = t.split('::');
     if (components.length > 1) {
-      typeCast = components.sublist(1).join("");
+      typeCast = components.sublist(1).join('');
     }
 
-    final variableComponents = components.first.split(":");
+    final variableComponents = components.first.split(':');
     if (variableComponents.length == 1) {
       name = variableComponents.first;
     } else if (variableComponents.length == 2) {

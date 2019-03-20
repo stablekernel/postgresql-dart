@@ -130,7 +130,7 @@ class PostgreSQLConnection extends Object
   Future open() async {
     if (_hasConnectedPreviously) {
       throw PostgreSQLException(
-          "Attempting to reopen a closed connection. Create a instance instead.");
+          'Attempting to reopen a closed connection. Create a instance instead.');
     }
 
     try {
@@ -153,7 +153,7 @@ class PostgreSQLConnection extends Object
           .timeout(Duration(seconds: timeoutInSeconds));
     } on TimeoutException catch (e, st) {
       final err = PostgreSQLException(
-          "Failed to connect to database $host:$port/$databaseName failed to connect.");
+          'Failed to connect to database $host:$port/$databaseName failed to connect.');
       await _close(err, st);
       rethrow;
     } catch (e, st) {
@@ -200,7 +200,7 @@ class PostgreSQLConnection extends Object
       {int commitTimeoutInSeconds}) async {
     if (isClosed) {
       throw PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          'Attempting to execute query, but connection is not open.');
     }
 
     final proxy = _TransactionProxy(this, queryBlock, commitTimeoutInSeconds);
@@ -271,14 +271,14 @@ class PostgreSQLConnection extends Object
     originalSocket.listen((data) {
       if (data.length != 1) {
         sslCompleter.completeError(PostgreSQLException(
-            "Could not initalize SSL connection, received unknown byte stream."));
+            'Could not initalize SSL connection, received unknown byte stream.'));
         return;
       }
 
       sslCompleter.complete(data.first);
     },
         onDone: () => sslCompleter.completeError(PostgreSQLException(
-            "Could not initialize SSL connection, connection closed during handshake.")),
+            'Could not initialize SSL connection, connection closed during handshake.')),
         onError: sslCompleter.completeError);
 
     final byteBuffer = ByteData(8);
@@ -291,7 +291,7 @@ class PostgreSQLConnection extends Object
         .then((responseByte) {
       if (responseByte != 83) {
         throw PostgreSQLException(
-            "The database server is not accepting SSL connections.");
+            'The database server is not accepting SSL connections.');
       }
 
       return SecureSocket.secure(originalSocket,
@@ -344,7 +344,7 @@ abstract class _PostgreSQLExecutionContextMixin
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          'Attempting to execute query, but connection is not open.');
     }
 
     final query = Query<List<List<dynamic>>>(
@@ -365,7 +365,7 @@ abstract class _PostgreSQLExecutionContextMixin
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          'Attempting to execute query, but connection is not open.');
     }
 
     final query = Query<List<List<dynamic>>>(
@@ -385,7 +385,7 @@ abstract class _PostgreSQLExecutionContextMixin
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
-          "Attempting to execute query, but connection is not open.");
+          'Attempting to execute query, but connection is not open.');
     }
 
     final query =
@@ -435,7 +435,7 @@ abstract class _PostgreSQLExecutionContextMixin
   }
 
   Future _resolveTableOIDs(List<int> oids) async {
-    final unresolvedIDString = oids.join(",");
+    final unresolvedIDString = oids.join(',');
     final orderedTableNames = await query(
         "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
 

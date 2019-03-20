@@ -8,7 +8,7 @@ class _TransactionProxy extends Object
     implements PostgreSQLExecutionContext {
   _TransactionProxy(
       this._connection, this.executionBlock, this.commitTimeoutInSeconds) {
-    beginQuery = Query<int>("BEGIN", {}, _connection, this)
+    beginQuery = Query<int>('BEGIN', {}, _connection, this)
       ..onlyReturnAffectedRowCount = true;
 
     beginQuery.future.then(startTransaction).catchError((err, StackTrace st) {
@@ -40,7 +40,7 @@ class _TransactionProxy extends Object
   }
 
   Future startTransaction(dynamic _) async {
-    var result;
+    dynamic result;
     try {
       result = await executionBlock(this);
 
@@ -65,7 +65,7 @@ class _TransactionProxy extends Object
     }
 
     if (!_hasRolledBack && !_hasFailed) {
-      await execute("COMMIT", timeoutInSeconds: commitTimeoutInSeconds);
+      await execute('COMMIT', timeoutInSeconds: commitTimeoutInSeconds);
       completer.complete(result);
     }
   }
@@ -82,12 +82,12 @@ class _TransactionProxy extends Object
       q.future.catchError((_) {});
     });
 
-    final err = PostgreSQLException("Query failed prior to execution. "
+    final err = PostgreSQLException('Query failed prior to execution. '
         "This query's transaction encountered an error earlier in the transaction "
-        "that prevented this query from executing.");
+        'that prevented this query from executing.');
     _queue.cancel(err);
 
-    final rollback = Query<int>("ROLLBACK", {}, _connection, _transaction)
+    final rollback = Query<int>('ROLLBACK', {}, _connection, _transaction)
       ..onlyReturnAffectedRowCount = true;
     _queue.addEvenIfCancelled(rollback);
 

@@ -68,9 +68,9 @@ class ParameterStatusMessage extends ServerMessage {
 }
 
 class ReadyForQueryMessage extends ServerMessage {
-  static const String StateIdle = "I";
-  static const String StateTransaction = "T";
-  static const String StateTransactionError = "E";
+  static const String StateIdle = 'I';
+  static const String StateTransaction = 'T';
+  static const String StateTransactionError = 'E';
 
   String state;
 
@@ -160,7 +160,7 @@ class NotificationResponseMessage extends ServerMessage {
 class CommandCompleteMessage extends ServerMessage {
   int rowsAffected;
 
-  static RegExp identifierExpression = RegExp(r"[A-Z ]*");
+  static RegExp identifierExpression = RegExp(r'[A-Z ]*');
 
   @override
   void readBytes(Uint8List bytes) {
@@ -168,7 +168,7 @@ class CommandCompleteMessage extends ServerMessage {
 
     final match = identifierExpression.firstMatch(str);
     if (match.end < str.length) {
-      rowsAffected = int.parse(str.split(" ").last);
+      rowsAffected = int.parse(str.split(' ').last);
     } else {
       rowsAffected = 0;
     }
@@ -180,7 +180,7 @@ class ParseCompleteMessage extends ServerMessage {
   void readBytes(Uint8List bytes) {}
 
   @override
-  String toString() => "Parse Complete Message";
+  String toString() => 'Parse Complete Message';
 }
 
 class BindCompleteMessage extends ServerMessage {
@@ -188,7 +188,7 @@ class BindCompleteMessage extends ServerMessage {
   void readBytes(Uint8List bytes) {}
 
   @override
-  String toString() => "Bind Complete Message";
+  String toString() => 'Bind Complete Message';
 }
 
 class ParameterDescriptionMessage extends ServerMessage {
@@ -216,7 +216,7 @@ class NoDataMessage extends ServerMessage {
   void readBytes(Uint8List bytes) {}
 
   @override
-  String toString() => "No Data Message";
+  String toString() => 'No Data Message';
 }
 
 class UnknownMessage extends ServerMessage {
@@ -274,21 +274,21 @@ class ErrorField {
 
   static PostgreSQLSeverity severityFromString(String str) {
     switch (str) {
-      case "ERROR":
+      case 'ERROR':
         return PostgreSQLSeverity.error;
-      case "FATAL":
+      case 'FATAL':
         return PostgreSQLSeverity.fatal;
-      case "PANIC":
+      case 'PANIC':
         return PostgreSQLSeverity.panic;
-      case "WARNING":
+      case 'WARNING':
         return PostgreSQLSeverity.warning;
-      case "NOTICE":
+      case 'NOTICE':
         return PostgreSQLSeverity.notice;
-      case "DEBUG":
+      case 'DEBUG':
         return PostgreSQLSeverity.debug;
-      case "INFO":
+      case 'INFO':
         return PostgreSQLSeverity.info;
-      case "LOG":
+      case 'LOG':
         return PostgreSQLSeverity.log;
     }
 

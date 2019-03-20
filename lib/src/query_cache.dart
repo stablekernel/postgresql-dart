@@ -28,7 +28,7 @@ class QueryCache {
       return existing.preparedStatementName;
     }
 
-    final string = "$idCounter".padLeft(12, "0");
+    final string = '$idCounter'.padLeft(12, '0');
 
     idCounter++;
 

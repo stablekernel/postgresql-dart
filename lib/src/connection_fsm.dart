@@ -79,7 +79,7 @@ class _PostgreSQLConnectionStateSocketConnected
     }
 
     completer.completeError(PostgreSQLException(
-        "Unsupported authentication type ${authMessage.type}, closing connection."));
+        'Unsupported authentication type ${authMessage.type}, closing connection.'));
 
     return _PostgreSQLConnectionStateClosed();
   }

@@ -4,13 +4,13 @@ import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
 void main() {
-  group("Successful notifications", () {
-    var connection = PostgreSQLConnection("localhost", 5432, "dart_test",
-        username: "dart", password: "dart");
+  group('Successful notifications', () {
+    var connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+        username: 'dart', password: 'dart');
 
     setUp(() async {
-      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
-          username: "dart", password: "dart");
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
     });
 
@@ -18,11 +18,11 @@ void main() {
       await connection.close();
     });
 
-    test("Notification Response", () async {
+    test('Notification Response', () async {
       final channel = 'virtual';
       final payload = 'This is the payload';
       final futureMsg = connection.notifications.first;
-      await connection.execute("LISTEN $channel;"
+      await connection.execute('LISTEN $channel;'
           "NOTIFY $channel, '$payload';");
 
       final msg = await futureMsg.timeout(Duration(milliseconds: 200));
@@ -30,22 +30,22 @@ void main() {
       expect(msg.payload, payload);
     });
 
-    test("Notification Response empty payload", () async {
+    test('Notification Response empty payload', () async {
       final channel = 'virtual';
       final futureMsg = connection.notifications.first;
-      await connection.execute("LISTEN $channel;"
-          "NOTIFY $channel;");
+      await connection.execute('LISTEN $channel;'
+          'NOTIFY $channel;');
 
       final msg = await futureMsg.timeout(Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, '');
     });
 
-    test("Notification UNLISTEN", () async {
+    test('Notification UNLISTEN', () async {
       final channel = 'virtual';
       final payload = 'This is the payload';
       var futureMsg = connection.notifications.first;
-      await connection.execute("LISTEN $channel;"
+      await connection.execute('LISTEN $channel;'
           "NOTIFY $channel, '$payload';");
 
       final msg = await futureMsg.timeout(Duration(milliseconds: 200));
@@ -53,7 +53,7 @@ void main() {
       expect(msg.channel, channel);
       expect(msg.payload, payload);
 
-      await connection.execute("UNLISTEN $channel;");
+      await connection.execute('UNLISTEN $channel;');
 
       futureMsg = connection.notifications.first;
 
@@ -66,7 +66,7 @@ void main() {
       } on TimeoutException catch (_) {}
     });
 
-    test("Notification many channel", () async {
+    test('Notification many channel', () async {
       final countResponse = <String, int>{};
       int totalCountResponse = 0;
       final finishExecute = Completer();
@@ -82,21 +82,21 @@ void main() {
 
       final notifier = () async {
         for (int i = 0; i < 5; i++) {
-          await connection.execute("NOTIFY $channel1;"
-              "NOTIFY $channel2;");
+          await connection.execute('NOTIFY $channel1;'
+              'NOTIFY $channel2;');
         }
       };
 
-      await connection.execute("LISTEN $channel1;");
+      await connection.execute('LISTEN $channel1;');
       await notifier();
 
-      await connection.execute("LISTEN $channel2;");
+      await connection.execute('LISTEN $channel2;');
       await notifier();
 
-      await connection.execute("UNLISTEN $channel1;");
+      await connection.execute('UNLISTEN $channel1;');
       await notifier();
 
-      await connection.execute("UNLISTEN $channel2;");
+      await connection.execute('UNLISTEN $channel2;');
       await notifier();
 
       await finishExecute.future.timeout(Duration(milliseconds: 200));

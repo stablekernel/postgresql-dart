@@ -3,50 +3,50 @@ import 'text_codec.dart';
 import 'types.dart';
 
 class PostgreSQLFormat {
-  static final int _atSignCodeUnit = "@".codeUnitAt(0);
+  static final int _atSignCodeUnit = '@'.codeUnitAt(0);
 
   static String id(String name, {PostgreSQLDataType type}) {
     if (type != null) {
-      return "@$name:${dataTypeStringForDataType(type)}";
+      return '@$name:${dataTypeStringForDataType(type)}';
     }
 
-    return "@$name";
+    return '@$name';
   }
 
   static String dataTypeStringForDataType(PostgreSQLDataType dt) {
     switch (dt) {
       case PostgreSQLDataType.text:
-        return "text";
+        return 'text';
       case PostgreSQLDataType.integer:
-        return "int4";
+        return 'int4';
       case PostgreSQLDataType.smallInteger:
-        return "int2";
+        return 'int2';
       case PostgreSQLDataType.bigInteger:
-        return "int8";
+        return 'int8';
       case PostgreSQLDataType.serial:
-        return "int4";
+        return 'int4';
       case PostgreSQLDataType.bigSerial:
-        return "int8";
+        return 'int8';
       case PostgreSQLDataType.real:
-        return "float4";
+        return 'float4';
       case PostgreSQLDataType.double:
-        return "float8";
+        return 'float8';
       case PostgreSQLDataType.boolean:
-        return "boolean";
+        return 'boolean';
       case PostgreSQLDataType.timestampWithoutTimezone:
-        return "timestamp";
+        return 'timestamp';
       case PostgreSQLDataType.timestampWithTimezone:
-        return "timestamptz";
+        return 'timestamptz';
       case PostgreSQLDataType.date:
-        return "date";
+        return 'date';
       case PostgreSQLDataType.json:
-        return "jsonb";
+        return 'jsonb';
       case PostgreSQLDataType.byteArray:
-        return "bytea";
+        return 'bytea';
       case PostgreSQLDataType.name:
-        return "name";
+        return 'name';
       case PostgreSQLDataType.uuid:
-        return "uuid";
+        return 'uuid';
     }
 
     return null;
@@ -120,7 +120,7 @@ class PostgreSQLFormat {
 
         if (!values.containsKey(identifier.name)) {
           throw FormatException(
-              "Format string specified identifier with name ${identifier.name}, but key was not present in values. Format string: $fmtString");
+              'Format string specified identifier with name ${identifier.name}, but key was not present in values. Format string: $fmtString');
         }
 
         final val = replace(identifier, idx);

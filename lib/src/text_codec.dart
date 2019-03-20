@@ -10,7 +10,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
   @override
   String convert(dynamic value) {
     if (value == null) {
-      return "null";
+      return 'null';
     }
 
     if (value is int) {
@@ -45,7 +45,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       return text;
     }
 
-    final backslashCodeUnit = r"\".codeUnitAt(0);
+    final backslashCodeUnit = r'\'.codeUnitAt(0);
     final quoteCodeUnit = r"'".codeUnitAt(0);
 
     int quoteCount = 0;
@@ -62,7 +62,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
     final buf = StringBuffer();
 
     if (backslashCount > 0) {
-      buf.write(" E");
+      buf.write(' E');
     }
 
     buf.write("'");
@@ -110,22 +110,22 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
   }
 
   String encodeBoolean(bool value) {
-    return value ? "TRUE" : "FALSE";
+    return value ? 'TRUE' : 'FALSE';
   }
 
   String encodeDateTime(DateTime value, {bool isDateOnly}) {
     var string = value.toIso8601String();
 
     if (isDateOnly) {
-      string = string.split("T").first;
+      string = string.split('T').first;
     } else {
       if (!value.isUtc) {
         final timezoneHourOffset = value.timeZoneOffset.inHours;
         final timezoneMinuteOffset = value.timeZoneOffset.inMinutes % 60;
 
-        var hourComponent = timezoneHourOffset.abs().toString().padLeft(2, "0");
+        var hourComponent = timezoneHourOffset.abs().toString().padLeft(2, '0');
         final minuteComponent =
-            timezoneMinuteOffset.abs().toString().padLeft(2, "0");
+            timezoneMinuteOffset.abs().toString().padLeft(2, '0');
 
         if (timezoneHourOffset >= 0) {
           hourComponent = '+$hourComponent';
@@ -133,14 +133,14 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
           hourComponent = '-$hourComponent';
         }
 
-        final timezoneString = [hourComponent, minuteComponent].join(":");
-        string = [string, timezoneString].join("");
+        final timezoneString = [hourComponent, minuteComponent].join(':');
+        string = [string, timezoneString].join('');
       }
     }
 
-    if (string.substring(0, 1) == "-") {
+    if (string.substring(0, 1) == '-') {
       string = '${string.substring(1)} BC';
-    } else if (string.substring(0, 1) == "+") {
+    } else if (string.substring(0, 1) == '+') {
       string = string.substring(1);
     }
 
@@ -149,13 +149,13 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
 
   String encodeJSON(dynamic value) {
     if (value == null) {
-      return "null";
+      return 'null';
     }
 
     if (value is String) {
       return "'${json.encode(value)}'";
     }
 
-    return "${json.encode(value)}";
+    return json.encode(value);
   }
 }

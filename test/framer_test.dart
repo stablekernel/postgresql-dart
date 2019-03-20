@@ -17,7 +17,7 @@ void main() {
     flush(framer);
   });
 
-  test("Perfectly sized message in one buffer", () {
+  test('Perfectly sized message in one buffer', () {
     framer.addBytes(bufferWithMessages([
       messageWithBytes([1, 2, 3], 1)
     ]));
@@ -30,7 +30,7 @@ void main() {
     ]);
   });
 
-  test("Two perfectly sized messages in one buffer", () {
+  test('Two perfectly sized messages in one buffer', () {
     framer.addBytes(bufferWithMessages([
       messageWithBytes([1, 2, 3], 1),
       messageWithBytes([1, 2, 3, 4], 2)
@@ -47,7 +47,7 @@ void main() {
     ]);
   });
 
-  test("Header fragment", () {
+  test('Header fragment', () {
     final message = messageWithBytes([1, 2, 3], 1);
     final fragments = fragmentedMessageBuffer(message, 2);
     framer.addBytes(fragments.first);
@@ -63,7 +63,7 @@ void main() {
     ]);
   });
 
-  test("Two header fragments", () {
+  test('Two header fragments', () {
     final message = messageWithBytes([1, 2, 3], 1);
     final fragments = fragmentedMessageBuffer(message, 2);
     final moreFragments = fragmentedMessageBuffer(fragments.first, 1);
@@ -84,7 +84,7 @@ void main() {
     ]);
   });
 
-  test("One message + header fragment", () {
+  test('One message + header fragment', () {
     final message1 = messageWithBytes([1, 2, 3], 1);
     final message2 = messageWithBytes([2, 2, 3], 2);
     final message2Fragments = fragmentedMessageBuffer(message2, 3);
@@ -106,7 +106,7 @@ void main() {
     ]);
   });
 
-  test("Message + header, missing rest of buffer", () {
+  test('Message + header, missing rest of buffer', () {
     final message1 = messageWithBytes([1, 2, 3], 1);
     final message2 = messageWithBytes([2, 2, 3], 2);
     final message2Fragments = fragmentedMessageBuffer(message2, 5);
@@ -128,7 +128,7 @@ void main() {
     ]);
   });
 
-  test("Message body spans two packets", () {
+  test('Message body spans two packets', () {
     final message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
     final fragments = fragmentedMessageBuffer(message, 8);
     framer.addBytes(fragments.first);
@@ -145,7 +145,7 @@ void main() {
   });
 
   test(
-      "Message spans two packets, started in a packet that contained another message",
+      'Message spans two packets, started in a packet that contained another message',
       () {
     final earlierMessage = messageWithBytes([1, 2], 0);
     final message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
@@ -167,7 +167,7 @@ void main() {
     ]);
   });
 
-  test("Message spans three packets, only part of header in the first", () {
+  test('Message spans three packets, only part of header in the first', () {
     final earlierMessage = messageWithBytes([1, 2], 0);
     final message =
         messageWithBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 1);
@@ -197,7 +197,7 @@ void main() {
     ]);
   });
 
-  test("Frame with no data", () {
+  test('Frame with no data', () {
     framer.addBytes(bufferWithMessages([messageWithBytes([], 10)]));
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
