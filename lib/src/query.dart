@@ -164,6 +164,7 @@ class Query<T> {
     _onComplete.completeError(error, stackTrace);
   }
 
+  @override
   String toString() => statement;
 }
 
@@ -257,6 +258,7 @@ class FieldDescription {
     return offset;
   }
 
+  @override
   String toString() {
     return "$fieldName $tableID $columnID $typeID $dataTypeSize $typeModifier $formatCode";
   }

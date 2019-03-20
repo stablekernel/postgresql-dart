@@ -45,6 +45,7 @@ class _PostgreSQLConnectionStateSocketConnected
 
   Completer completer;
 
+  @override
   _PostgreSQLConnectionState onEnter() {
     var startupMessage = new StartupMessage(
         connection.databaseName, connection.timeZone,
@@ -55,6 +56,7 @@ class _PostgreSQLConnectionStateSocketConnected
     return this;
   }
 
+  @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
     var exception = new PostgreSQLException._(message.fields);
 
@@ -63,6 +65,7 @@ class _PostgreSQLConnectionStateSocketConnected
     return new _PostgreSQLConnectionStateClosed();
   }
 
+  @override
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
     final authMessage = message as AuthenticationMessage;
 
@@ -92,6 +95,7 @@ class _PostgreSQLConnectionStateAuthenticating
 
   Completer completer;
 
+  @override
   _PostgreSQLConnectionState onEnter() {
     var authMessage = new AuthMD5Message(
         connection.username, connection.password, connection._salt);
@@ -101,6 +105,7 @@ class _PostgreSQLConnectionStateAuthenticating
     return this;
   }
 
+  @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
     var exception = new PostgreSQLException._(message.fields);
 
@@ -109,6 +114,7 @@ class _PostgreSQLConnectionStateAuthenticating
     return new _PostgreSQLConnectionStateClosed();
   }
 
+  @override
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
     if (message is ParameterStatusMessage) {
       connection.settings[message.name] = message.value;
@@ -135,6 +141,7 @@ class _PostgreSQLConnectionStateAuthenticated
 
   Completer completer;
 
+  @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
     var exception = new PostgreSQLException._(message.fields);
 
@@ -143,6 +150,7 @@ class _PostgreSQLConnectionStateAuthenticated
     return new _PostgreSQLConnectionStateClosed();
   }
 
+  @override
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
     if (message is ParameterStatusMessage) {
       connection.settings[message.name] = message.value;
@@ -168,6 +176,7 @@ class _PostgreSQLConnectionStateIdle extends _PostgreSQLConnectionState {
 
   Completer openCompleter;
 
+  @override
   _PostgreSQLConnectionState awake() {
     var pendingQuery = connection._queue.pending;
     if (pendingQuery != null) {
@@ -198,12 +207,14 @@ class _PostgreSQLConnectionStateIdle extends _PostgreSQLConnectionState {
     }
   }
 
+  @override
   _PostgreSQLConnectionState onEnter() {
     openCompleter?.complete();
 
     return awake();
   }
 
+  @override
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
     return this;
   }
@@ -220,6 +231,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
   PostgreSQLException returningException;
   int rowsAffected = 0;
 
+  @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
     // If we get an error here, then we should eat the rest of the messages
     // and we are always confirmed to get a _ReadyForQueryMessage to finish up.
@@ -235,6 +247,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     return this;
   }
 
+  @override
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
     // We ignore NoData, as it doesn't tell us anything we don't already know
     // or care about.
@@ -287,10 +300,12 @@ class _PostgreSQLConnectionStateReadyInTransaction
 
   _TransactionProxy transaction;
 
+  @override
   _PostgreSQLConnectionState onEnter() {
     return awake();
   }
 
+  @override
   _PostgreSQLConnectionState awake() {
     var pendingQuery = transaction._queue.pending;
     if (pendingQuery != null) {

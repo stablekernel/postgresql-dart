@@ -11,6 +11,7 @@ abstract class ServerMessage {
 class ErrorResponseMessage implements ServerMessage {
   List<ErrorField> fields = [new ErrorField()];
 
+  @override
   void readBytes(Uint8List bytes) {
     var lastByteRemovedList =
         new Uint8List.view(bytes.buffer, bytes.offsetInBytes, bytes.length - 1);
@@ -40,6 +41,7 @@ class AuthenticationMessage implements ServerMessage {
 
   List<int> salt;
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     type = view.getUint32(0);
@@ -57,6 +59,7 @@ class ParameterStatusMessage extends ServerMessage {
   String name;
   String value;
 
+  @override
   void readBytes(Uint8List bytes) {
     name = utf8.decode(bytes.sublist(0, bytes.indexOf(0)));
     value =
@@ -71,6 +74,7 @@ class ReadyForQueryMessage extends ServerMessage {
 
   String state;
 
+  @override
   void readBytes(Uint8List bytes) {
     state = utf8.decode(bytes);
   }
@@ -80,6 +84,7 @@ class BackendKeyMessage extends ServerMessage {
   int processID;
   int secretKey;
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
@@ -90,6 +95,7 @@ class BackendKeyMessage extends ServerMessage {
 class RowDescriptionMessage extends ServerMessage {
   List<FieldDescription> fieldDescriptions;
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     var offset = 0;
@@ -108,6 +114,7 @@ class RowDescriptionMessage extends ServerMessage {
 class DataRowMessage extends ServerMessage {
   List<ByteData> values = [];
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     var offset = 0;
@@ -131,6 +138,7 @@ class DataRowMessage extends ServerMessage {
     }
   }
 
+  @override
   String toString() => 'Data Row Message: $values';
 }
 
@@ -139,6 +147,7 @@ class NotificationResponseMessage extends ServerMessage {
   String channel;
   String payload;
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
@@ -153,6 +162,7 @@ class CommandCompleteMessage extends ServerMessage {
 
   static RegExp identifierExpression = new RegExp(r"[A-Z ]*");
 
+  @override
   void readBytes(Uint8List bytes) {
     var str = utf8.decode(bytes.sublist(0, bytes.length - 1));
 
@@ -166,20 +176,25 @@ class CommandCompleteMessage extends ServerMessage {
 }
 
 class ParseCompleteMessage extends ServerMessage {
+  @override
   void readBytes(Uint8List bytes) {}
 
+  @override
   String toString() => "Parse Complete Message";
 }
 
 class BindCompleteMessage extends ServerMessage {
+  @override
   void readBytes(Uint8List bytes) {}
 
+  @override
   String toString() => "Bind Complete Message";
 }
 
 class ParameterDescriptionMessage extends ServerMessage {
   List<int> parameterTypeIDs;
 
+  @override
   void readBytes(Uint8List bytes) {
     var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
 
@@ -197,8 +212,10 @@ class ParameterDescriptionMessage extends ServerMessage {
 }
 
 class NoDataMessage extends ServerMessage {
+  @override
   void readBytes(Uint8List bytes) {}
 
+  @override
   String toString() => "No Data Message";
 }
 
@@ -206,6 +223,7 @@ class UnknownMessage extends ServerMessage {
   Uint8List bytes;
   int code;
 
+  @override
   void readBytes(Uint8List bytes) {
     this.bytes = bytes;
   }

@@ -108,6 +108,7 @@ class PostgreSQLException implements Exception {
   /// A [StackTrace] if available.
   StackTrace stackTrace;
 
+  @override
   String toString() {
     var buff = new StringBuffer("$severity $code: $message ");
 

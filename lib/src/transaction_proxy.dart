@@ -23,8 +23,10 @@ class _TransactionProxy extends Object
 
   Future get future => completer.future;
 
+  @override
   final PostgreSQLConnection _connection;
 
+  @override
   PostgreSQLExecutionContext get _transaction => this;
 
   final _TransactionQuerySignature executionBlock;
@@ -32,6 +34,7 @@ class _TransactionProxy extends Object
   bool _hasFailed = false;
   bool _hasRolledBack = false;
 
+  @override
   void cancelTransaction({String reason}) {
     throw new _TransactionRollbackException(reason);
   }

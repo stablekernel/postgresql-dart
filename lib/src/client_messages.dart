@@ -62,6 +62,7 @@ class StartupMessage extends ClientMessage {
 
   ByteData buffer;
 
+  @override
   int get length {
     var fixedLength = 53;
     var variableLength = (username?.utf8Length ?? 0) +
@@ -72,6 +73,7 @@ class StartupMessage extends ClientMessage {
     return fixedLength + variableLength;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeInt32(length);
     buffer.writeInt32(ClientMessage.ProtocolVersion);
@@ -105,10 +107,12 @@ class AuthMD5Message extends ClientMessage {
 
   UTF8BackedString hashedAuthString;
 
+  @override
   int get length {
     return 6 + hashedAuthString.utf8Length;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.PasswordIdentifier);
     buffer.writeUint32(length - 1);
@@ -123,10 +127,12 @@ class QueryMessage extends ClientMessage {
 
   UTF8BackedString queryString;
 
+  @override
   int get length {
     return 6 + queryString.utf8Length;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.QueryIdentifier);
     buffer.writeUint32(length - 1);
@@ -143,10 +149,12 @@ class ParseMessage extends ClientMessage {
   UTF8BackedString statementName;
   UTF8BackedString statement;
 
+  @override
   int get length {
     return 9 + statement.utf8Length + statementName.utf8Length;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.ParseIdentifier);
     buffer.writeUint32(length - 1);
@@ -164,10 +172,12 @@ class DescribeMessage extends ClientMessage {
 
   UTF8BackedString statementName;
 
+  @override
   int get length {
     return 7 + statementName.utf8Length;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.DescribeIdentifier);
     buffer.writeUint32(length - 1);
@@ -188,6 +198,7 @@ class BindMessage extends ClientMessage {
   int typeSpecCount;
   int _cachedLength;
 
+  @override
   int get length {
     if (_cachedLength == null) {
       var inputParameterElementCount = parameters.length;
@@ -210,6 +221,7 @@ class BindMessage extends ClientMessage {
     return _cachedLength;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.BindIdentifier);
     buffer.writeUint32(length - 1);
@@ -258,10 +270,12 @@ class BindMessage extends ClientMessage {
 class ExecuteMessage extends ClientMessage {
   ExecuteMessage();
 
+  @override
   int get length {
     return 10;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.ExecuteIdentifier);
     buffer.writeUint32(length - 1);
@@ -273,10 +287,12 @@ class ExecuteMessage extends ClientMessage {
 class SyncMessage extends ClientMessage {
   SyncMessage();
 
+  @override
   int get length {
     return 5;
   }
 
+  @override
   void applyToBuffer(ByteDataWriter buffer) {
     buffer.writeUint8(ClientMessage.SyncIdentifier);
     buffer.writeUint32(4);

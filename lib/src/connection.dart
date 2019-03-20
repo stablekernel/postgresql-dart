@@ -113,8 +113,10 @@ class PostgreSQLConnection extends Object
   bool _hasConnectedPreviously = false;
   _PostgreSQLConnectionState _connectionState;
 
+  @override
   PostgreSQLExecutionContext get _transaction => null;
 
+  @override
   PostgreSQLConnection get _connection => this;
 
   /// Establishes a connection with a PostgreSQL database.
@@ -208,6 +210,7 @@ class PostgreSQLConnection extends Object
     return await proxy.completer.future;
   }
 
+  @override
   void cancelTransaction({String reason}) {
     // Default is no-op
   }
@@ -333,8 +336,10 @@ abstract class _PostgreSQLExecutionContextMixin
 
   PostgreSQLExecutionContext get _transaction;
 
+  @override
   int get queueSize => _queue.length;
 
+  @override
   Future<List<List<dynamic>>> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse = true,
@@ -354,6 +359,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
   }
 
+  @override
   Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
       String fmtString,
       {Map<String, dynamic> substitutionValues,
@@ -376,6 +382,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return _mapifyRows(rows, query.fieldDescriptions);
   }
 
+  @override
   Future<int> execute(String fmtString,
       {Map<String, dynamic> substitutionValues, int timeoutInSeconds}) {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
@@ -391,6 +398,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
   }
 
+  @override
   void cancelTransaction({String reason});
 
   Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
