@@ -98,6 +98,7 @@ class PostgreSQLConnection extends Object with _PostgreSQLExecutionContextMixin 
   Socket _socket;
   MessageFramer _framer = new MessageFramer();
   int _processID;
+  // ignore: unused_field
   int _secretKey;
   List<int> _salt;
 
