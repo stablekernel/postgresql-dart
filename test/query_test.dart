@@ -35,7 +35,7 @@ void main() {
             "t": "°∆",
           });
 
-      var expectedRow = ["°∆"];
+      final expectedRow = ["°∆"];
       expect(result, [expectedRow]);
 
       result = await connection.query("select t from t");
@@ -46,7 +46,7 @@ void main() {
       var result =
           await connection.query("INSERT INTO t (t) values ('°∆') RETURNING t");
 
-      var expectedRow = ["°∆"];
+      final expectedRow = ["°∆"];
       expect(result, [expectedRow]);
 
       result = await connection.query("select t from t");
@@ -61,9 +61,9 @@ void main() {
             "t": "'©™®'",
           });
 
-      var expectedRow = ["'©™®'"];
+      final expectedRow = ["'©™®'"];
 
-      var result = await connection.query("select t from t");
+      final result = await connection.query("select t from t");
       expect(result, [expectedRow]);
     });
 
@@ -75,23 +75,23 @@ void main() {
             "t": "°\\'©™®'",
           });
 
-      var expectedRow = ["°\\'©™®'"];
+      final expectedRow = ["°\\'©™®'"];
 
-      var result = await connection.query("select t from t");
+      final result = await connection.query("select t from t");
       expect(result, [expectedRow]);
     });
 
     test("UTF16 strings in query with escape characters", () async {
       await connection.execute("INSERT INTO t (t) values ('°''©™®''')");
 
-      var expectedRow = ["°'©™®'"];
+      final expectedRow = ["°'©™®'"];
 
-      var result = await connection.query("select t from t");
+      final result = await connection.query("select t from t");
       expect(result, [expectedRow]);
     });
 
     test("Really long raw substitution value", () async {
-      var result = await connection.query(
+      final result = await connection.query(
           "INSERT INTO t (t) VALUES (${PostgreSQLFormat.id("t", type: PostgreSQLDataType.text)}) returning t;",
           substitutionValues: {"t": lorumIpsum});
       expect(result, [
@@ -100,7 +100,7 @@ void main() {
     });
 
     test("Really long SQL string in execute", () async {
-      var result = await connection
+      final result = await connection
           .execute("INSERT INTO t (t) VALUES ('$lorumIpsum') returning t;");
       expect(result, 1);
     });
@@ -136,7 +136,7 @@ void main() {
             "u": "01234567-89ab-cdef-0123-0123456789ab"
           });
 
-      var expectedRow = [
+      final expectedRow = [
         1,
         1,
         2,
@@ -189,7 +189,7 @@ void main() {
             "u": "01234567-89ab-cdef-0123-0123456789ab"
           });
 
-      var expectedRow = [
+      final expectedRow = [
         1,
         1,
         2,
@@ -238,7 +238,7 @@ void main() {
             "tsz": new DateTime.utc(2000, 3),
           });
 
-      var expectedRow = [
+      final expectedRow = [
         1,
         1,
         2,
@@ -259,7 +259,7 @@ void main() {
     });
 
     test("Can supply null for values (binary)", () async {
-      var results = await connection.query(
+      final results = await connection.query(
           "INSERT INTO n (i1, i2) values (@i1:int4, @i2:int4) returning i1, i2",
           substitutionValues: {
             "i1": null,
@@ -272,7 +272,7 @@ void main() {
     });
 
     test("Can supply null for values (text)", () async {
-      var results = await connection.query(
+      final results = await connection.query(
           "INSERT INTO n (i1, i2) values (@i1, @i2:int4) returning i1, i2",
           substitutionValues: {
             "i1": null,
@@ -285,7 +285,7 @@ void main() {
     });
 
     test("Overspecifying parameters does not impact query (text)", () async {
-      var results = await connection.query(
+      final results = await connection.query(
           "INSERT INTO u (i1, i2) values (@i1, @i2) returning i1, i2",
           substitutionValues: {
             "i1": 0,
@@ -299,7 +299,7 @@ void main() {
     });
 
     test("Overspecifying parameters does not impact query (binary)", () async {
-      var results = await connection.query(
+      final results = await connection.query(
           "INSERT INTO u (i1, i2) values (@i1:int4, @i2:int4) returning i1, i2",
           substitutionValues: {
             "i1": 0,
@@ -313,7 +313,7 @@ void main() {
     });
 
     test("Can cast text to int on db server", () async {
-      var results = await connection.query(
+      final results = await connection.query(
           "INSERT INTO u (i1, i2) VALUES (@i1::int4, @i2::int4) RETURNING i1, i2",
           substitutionValues: {"i1": "0", "i2": "1"});
 

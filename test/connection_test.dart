@@ -32,10 +32,10 @@ void main() {
       await conn.open();
 
       expect(await conn.execute("select 1"), equals(1));
-      var socketMirror = reflect(conn).type.declarations.values.firstWhere(
+      final socketMirror = reflect(conn).type.declarations.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
-      var underlyingSocket =
+      final underlyingSocket =
           reflect(conn).getField(socketMirror.simpleName).reflectee;
       expect(underlyingSocket is SecureSocket, true);
     });
@@ -64,7 +64,7 @@ void main() {
 
       await conn.close();
 
-      var socketMirror = reflect(conn).type.declarations.values.firstWhere(
+      final socketMirror = reflect(conn).type.declarations.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
       final underlyingSocket =
@@ -82,7 +82,7 @@ void main() {
 
       await conn.close();
 
-      var socketMirror = reflect(conn).type.declarations.values.firstWhere(
+      final socketMirror = reflect(conn).type.declarations.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
       final underlyingSocket =
@@ -99,12 +99,12 @@ void main() {
           username: "darttrust");
       await conn.open();
 
-      var errors = [];
+      final errors = [];
       final catcher = (e) {
         errors.add(e);
         return null;
       };
-      var futures = [
+      final futures = [
         conn.query("select 1", allowReuse: false).catchError(catcher),
         conn.query("select 2", allowReuse: false).catchError(catcher),
         conn.query("select 3", allowReuse: false).catchError(catcher),
@@ -126,12 +126,12 @@ void main() {
           username: "darttrust", useSSL: true);
       await conn.open();
 
-      var errors = [];
+      final errors = [];
       final catcher = (e) {
         errors.add(e);
         return null;
       };
-      var futures = [
+      final futures = [
         conn.query("select 1", allowReuse: false).catchError(catcher),
         conn.query("select 2", allowReuse: false).catchError(catcher),
         conn.query("select 3", allowReuse: false).catchError(catcher),
@@ -193,7 +193,7 @@ void main() {
     test(
         "Issuing multiple queries without awaiting are returned with appropriate values",
         () async {
-      var futures = [
+      final futures = [
         conn.query("select 1", allowReuse: false),
         conn.query("select 2", allowReuse: false),
         conn.query("select 3", allowReuse: false),
@@ -201,7 +201,7 @@ void main() {
         conn.query("select 5", allowReuse: false)
       ];
 
-      var results = await Future.wait(futures);
+      final results = await Future.wait(futures);
 
       expect(results, [
         [
@@ -353,12 +353,12 @@ void main() {
         // ignore
       });
 
-      var futures = [
+      final futures = [
         conn.query("select 1", allowReuse: false),
         conn.query("select 2", allowReuse: false),
         conn.query("select 3", allowReuse: false),
       ];
-      var results = await Future.wait(futures);
+      final results = await Future.wait(futures);
 
       expect(results, [
         [
@@ -372,7 +372,7 @@ void main() {
         ]
       ]);
 
-      var queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
+      final queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_queue"));
       final queue =
@@ -400,7 +400,7 @@ void main() {
       });
 
       orderEnsurer.add(2);
-      var res = await conn.transaction((ctx) async {
+      final res = await conn.transaction((ctx) async {
         orderEnsurer.add(3);
         return await ctx.query("SELECT i FROM t");
       });
@@ -424,11 +424,11 @@ void main() {
       conn.execute("abdef").catchError((err, st) {});
       conn.execute("select @a").catchError((err, st) {});
 
-      var futures = [
+      final futures = [
         conn.query("select 1", allowReuse: false),
         conn.query("select 2", allowReuse: false),
       ];
-      var results = await Future.wait(futures);
+      final results = await Future.wait(futures);
 
       expect(results, [
         [
@@ -439,7 +439,7 @@ void main() {
         ]
       ]);
 
-      var queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
+      final queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_queue"));
       final queue =
@@ -460,7 +460,7 @@ void main() {
     test(
         "Socket fails to connect reports error, disables connection for future use",
         () async {
-      var conn = new PostgreSQLConnection("localhost", 5431, "dart_test");
+      final conn = new PostgreSQLConnection("localhost", 5431, "dart_test");
 
       try {
         await conn.open();
@@ -473,7 +473,7 @@ void main() {
     test(
         "SSL Socket fails to connect reports error, disables connection for future use",
         () async {
-      var conn = new PostgreSQLConnection("localhost", 5431, "dart_test",
+      final conn = new PostgreSQLConnection("localhost", 5431, "dart_test",
           useSSL: true);
 
       try {
@@ -495,7 +495,7 @@ void main() {
         s.listen((bytes) {});
       });
 
-      var conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2);
 
       try {
@@ -517,7 +517,7 @@ void main() {
         s.listen((bytes) {});
       });
 
-      var conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2, useSSL: true);
 
       try {
@@ -530,19 +530,18 @@ void main() {
 
     test("Connection that times out triggers future for pending queries",
         () async {
-      var openCompleter = new Completer();
+      final openCompleter = new Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
-        new Future.delayed(new Duration(milliseconds: 100), () {
-          openCompleter.complete();
-        });
+        new Future.delayed(
+            new Duration(milliseconds: 100), openCompleter.complete);
       });
 
-      var conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2);
       conn.open().catchError((e) {});
 
@@ -558,19 +557,18 @@ void main() {
 
     test("SSL Connection that times out triggers future for pending queries",
         () async {
-      var openCompleter = new Completer();
+      final openCompleter = new Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
-        new Future.delayed(new Duration(milliseconds: 100), () {
-          openCompleter.complete();
-        });
+        new Future.delayed(
+            new Duration(milliseconds: 100), openCompleter.complete);
       });
 
-      var conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2, useSSL: true);
       conn.open().catchError((e) {
         return null;
@@ -633,7 +631,7 @@ void main() {
     await conn.open();
     expect(conn.queueSize, 0);
 
-    var futures = [
+    final futures = [
       conn.query("select 1", allowReuse: false),
       conn.query("select 2", allowReuse: false),
       conn.query("select 3", allowReuse: false)

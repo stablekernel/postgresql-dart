@@ -38,11 +38,11 @@ void main() {
   });
 
   test("Fetch em", () async {
-    var res = await connection.query("select * from t");
+    final res = await connection.query("select * from t");
 
-    var row1 = res[0];
-    var row2 = res[1];
-    var row3 = res[2];
+    final row1 = res[0];
+    final row2 = res[1];
+    final row3 = res[2];
 
     // lower bound row
     expect(row1[0], equals(-2147483648));

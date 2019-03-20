@@ -16,7 +16,7 @@ abstract class _PostgreSQLConnectionState {
   }
 
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
-    var exception = new PostgreSQLException._(message.fields);
+    final exception = new PostgreSQLException._(message.fields);
 
     if (exception.severity == PostgreSQLSeverity.fatal ||
         exception.severity == PostgreSQLSeverity.panic) {
@@ -47,7 +47,7 @@ class _PostgreSQLConnectionStateSocketConnected
 
   @override
   _PostgreSQLConnectionState onEnter() {
-    var startupMessage = new StartupMessage(
+    final startupMessage = new StartupMessage(
         connection.databaseName, connection.timeZone,
         username: connection.username);
 
@@ -58,7 +58,7 @@ class _PostgreSQLConnectionStateSocketConnected
 
   @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
-    var exception = new PostgreSQLException._(message.fields);
+    final exception = new PostgreSQLException._(message.fields);
 
     completer.completeError(exception);
 
@@ -97,7 +97,7 @@ class _PostgreSQLConnectionStateAuthenticating
 
   @override
   _PostgreSQLConnectionState onEnter() {
-    var authMessage = new AuthMD5Message(
+    final authMessage = new AuthMD5Message(
         connection.username, connection.password, connection._salt);
 
     connection._socket.add(authMessage.asBytes());
@@ -107,7 +107,7 @@ class _PostgreSQLConnectionStateAuthenticating
 
   @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
-    var exception = new PostgreSQLException._(message.fields);
+    final exception = new PostgreSQLException._(message.fields);
 
     completer.completeError(exception);
 
@@ -143,7 +143,7 @@ class _PostgreSQLConnectionStateAuthenticated
 
   @override
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
-    var exception = new PostgreSQLException._(message.fields);
+    final exception = new PostgreSQLException._(message.fields);
 
     completer.completeError(exception);
 
@@ -178,7 +178,7 @@ class _PostgreSQLConnectionStateIdle extends _PostgreSQLConnectionState {
 
   @override
   _PostgreSQLConnectionState awake() {
-    var pendingQuery = connection._queue.pending;
+    final pendingQuery = connection._queue.pending;
     if (pendingQuery != null) {
       return processQuery(pendingQuery);
     }
@@ -236,7 +236,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     // If we get an error here, then we should eat the rest of the messages
     // and we are always confirmed to get a _ReadyForQueryMessage to finish up.
     // We should only report the error once that is done.
-    var exception = new PostgreSQLException._(message.fields);
+    final exception = new PostgreSQLException._(message.fields);
     returningException ??= exception;
 
     if (exception.severity == PostgreSQLSeverity.fatal ||
@@ -280,7 +280,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     } else if (message is DataRowMessage) {
       query.addRow(message.values);
     } else if (message is ParameterDescriptionMessage) {
-      var validationException =
+      final validationException =
           query.validateParameters(message.parameterTypeIDs);
       if (validationException != null) {
         query.cache = null;
@@ -307,7 +307,7 @@ class _PostgreSQLConnectionStateReadyInTransaction
 
   @override
   _PostgreSQLConnectionState awake() {
-    var pendingQuery = transaction._queue.pending;
+    final pendingQuery = transaction._queue.pending;
     if (pendingQuery != null) {
       return processQuery(pendingQuery);
     }

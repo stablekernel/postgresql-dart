@@ -31,43 +31,44 @@ void main() {
   });
 
   test("Simple replacement", () {
-    var result = PostgreSQLFormat.substitute("@id", {"id": 20});
+    final result = PostgreSQLFormat.substitute("@id", {"id": 20});
     expect(result, equals("20"));
   });
 
   test("Trailing/leading space", () {
-    var result = PostgreSQLFormat.substitute(" @id ", {"id": 20});
+    final result = PostgreSQLFormat.substitute(" @id ", {"id": 20});
     expect(result, equals(" 20 "));
   });
 
   test("Two identifiers next to eachother", () {
-    var result = PostgreSQLFormat.substitute("@id@bob", {"id": 20, "bob": 13});
+    final result =
+        PostgreSQLFormat.substitute("@id@bob", {"id": 20, "bob": 13});
     expect(result, equals("2013"));
   });
 
   test("Identifier with underscores", () {
-    var result = PostgreSQLFormat.substitute("@_one_two", {"_one_two": 12});
+    final result = PostgreSQLFormat.substitute("@_one_two", {"_one_two": 12});
     expect(result, equals("12"));
   });
 
   test("Identifier with type info", () {
-    var result = PostgreSQLFormat.substitute("@id:int2", {"id": 12});
+    final result = PostgreSQLFormat.substitute("@id:int2", {"id": 12});
     expect(result, equals("12"));
   });
 
   test("Identifiers next to eachother with type info", () {
-    var result = PostgreSQLFormat.substitute(
+    final result = PostgreSQLFormat.substitute(
         "@id:int2@foo:float4", {"id": 12, "foo": 2.0});
     expect(result, equals("122.0"));
   });
 
   test("Disambiguate PostgreSQL typecast", () {
-    var result = PostgreSQLFormat.substitute("@id::jsonb", {"id": "12"});
+    final result = PostgreSQLFormat.substitute("@id::jsonb", {"id": "12"});
     expect(result, "'12'::jsonb");
   });
 
   test("PostgreSQL typecast appears in query", () {
-    var results = PostgreSQLFormat.substitute(
+    final results = PostgreSQLFormat.substitute(
         "SELECT * FROM t WHERE id=@id:int2 WHERE blob=@blob::jsonb AND blob='{\"a\":1}'::jsonb",
         {"id": 2, "blob": "{\"key\":\"value\"}"});
 
@@ -76,7 +77,7 @@ void main() {
   });
 
   test("Can both provide type and typecast", () {
-    var results = PostgreSQLFormat.substitute(
+    final results = PostgreSQLFormat.substitute(
         "SELECT * FROM t WHERE id=@id:int2::int4",
         {"id": 2, "blob": "{\"key\":\"value\"}"});
 
@@ -84,23 +85,23 @@ void main() {
   });
 
   test("UTF16 symbols with quotes", () {
-    var value = "'©™®'";
-    var results = PostgreSQLFormat.substitute(
+    final value = "'©™®'";
+    final results = PostgreSQLFormat.substitute(
         "INSERT INTO t (t) VALUES (@t)", {"t": value});
 
     expect(results, "INSERT INTO t (t) VALUES ('''©™®''')");
   });
 
   test("UTF16 symbols with backslash", () {
-    var value = "'©\\™®'";
-    var results = PostgreSQLFormat.substitute(
+    final value = "'©\\™®'";
+    final results = PostgreSQLFormat.substitute(
         "INSERT INTO t (t) VALUES (@t)", {"t": value});
 
     expect(results, "INSERT INTO t (t) VALUES ( E'''©\\\\™®''')");
   });
 
   test("String identifiers get escaped", () {
-    var result = PostgreSQLFormat.substitute(
+    final result = PostgreSQLFormat.substitute(
         "@id:text @foo", {"id": "1';select", "foo": "3\\4"});
 
     //                         '  1  '  '  ;  s   e   l   e   c  t   '  sp  sp  E  '  3  \  \  4  '

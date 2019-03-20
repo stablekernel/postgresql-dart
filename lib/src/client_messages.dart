@@ -35,13 +35,13 @@ abstract class ClientMessage {
   void applyToBuffer(ByteDataWriter buffer);
 
   Uint8List asBytes() {
-    var buffer = new ByteDataWriter();
+    final buffer = new ByteDataWriter();
     applyToBuffer(buffer);
     return buffer.toBytes();
   }
 
   static Uint8List aggregateBytes(List<ClientMessage> messages) {
-    var buffer = new ByteDataWriter();
+    final buffer = new ByteDataWriter();
     messages.forEach((cm) => cm.applyToBuffer(buffer));
     return buffer.toBytes();
   }
@@ -64,8 +64,8 @@ class StartupMessage extends ClientMessage {
 
   @override
   int get length {
-    var fixedLength = 53;
-    var variableLength = (username?.utf8Length ?? 0) +
+    final fixedLength = 53;
+    final variableLength = (username?.utf8Length ?? 0) +
         databaseName.utf8Length +
         timeZone.utf8Length +
         3;

@@ -87,7 +87,7 @@ class _TransactionProxy extends Object
         "that prevented this query from executing.");
     _queue.cancel(err);
 
-    var rollback = new Query<int>("ROLLBACK", {}, _connection, _transaction)
+    final rollback = new Query<int>("ROLLBACK", {}, _connection, _transaction)
       ..onlyReturnAffectedRowCount = true;
     _queue.addEvenIfCancelled(rollback);
 

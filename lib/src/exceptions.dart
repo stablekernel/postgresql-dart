@@ -40,7 +40,7 @@ class PostgreSQLException implements Exception {
   }
 
   PostgreSQLException._(List<ErrorField> errorFields, {this.stackTrace}) {
-    var finder = (int identifer) => (errorFields.firstWhere(
+    final finder = (int identifer) => (errorFields.firstWhere(
         (ErrorField e) => e.identificationToken == identifer,
         orElse: () => null));
 
@@ -110,7 +110,7 @@ class PostgreSQLException implements Exception {
 
   @override
   String toString() {
-    var buff = new StringBuffer("$severity $code: $message ");
+    final buff = new StringBuffer("$severity $code: $message ");
 
     if (detail != null) {
       buff.write("Detail: $detail ");

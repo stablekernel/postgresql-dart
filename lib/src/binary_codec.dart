@@ -131,7 +131,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
 
       case PostgreSQLDataType.json:
         {
-          var jsonBytes = utf8.encode(json.encode(value));
+          final jsonBytes = utf8.encode(json.encode(value));
           final outBuffer = new Uint8List(jsonBytes.length + 1);
           outBuffer[0] = 1;
           for (var i = 0; i < jsonBytes.length; i++) {

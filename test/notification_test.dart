@@ -19,36 +19,36 @@ void main() {
     });
 
     test("Notification Response", () async {
-      var channel = 'virtual';
-      var payload = 'This is the payload';
-      var futureMsg = connection.notifications.first;
+      final channel = 'virtual';
+      final payload = 'This is the payload';
+      final futureMsg = connection.notifications.first;
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel, '$payload';");
 
-      var msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, payload);
     });
 
     test("Notification Response empty payload", () async {
-      var channel = 'virtual';
-      var futureMsg = connection.notifications.first;
+      final channel = 'virtual';
+      final futureMsg = connection.notifications.first;
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel;");
 
-      var msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, '');
     });
 
     test("Notification UNLISTEN", () async {
-      var channel = 'virtual';
-      var payload = 'This is the payload';
+      final channel = 'virtual';
+      final payload = 'This is the payload';
       var futureMsg = connection.notifications.first;
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel, '$payload';");
 
-      var msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
 
       expect(msg.channel, channel);
       expect(msg.payload, payload);
@@ -67,20 +67,20 @@ void main() {
     });
 
     test("Notification many channel", () async {
-      Map<String, int> countResponse = <String, int>{};
+      final countResponse = <String, int>{};
       int totalCountResponse = 0;
-      Completer finishExecute = new Completer();
+      final finishExecute = new Completer();
       connection.notifications.listen((msg) {
-        int count = countResponse[msg.channel];
+        final count = countResponse[msg.channel];
         countResponse[msg.channel] = (count ?? 0) + 1;
         totalCountResponse++;
         if (totalCountResponse == 20) finishExecute.complete();
       });
 
-      var channel1 = 'virtual1';
-      var channel2 = 'virtual2';
+      final channel1 = 'virtual1';
+      final channel2 = 'virtual2';
 
-      var notifier = () async {
+      final notifier = () async {
         for (int i = 0; i < 5; i++) {
           await connection.execute("NOTIFY $channel1;"
               "NOTIFY $channel2;");

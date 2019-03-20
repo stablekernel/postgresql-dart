@@ -275,12 +275,12 @@ void main() {
 
     test("Encode DateTime", () {
       // Get users current timezone
-      var tz = new DateTime(2001, 2, 3).timeZoneOffset;
-      var tzOffsetDelimiter = "${tz.isNegative ? '-' : '+'}"
+      final tz = new DateTime(2001, 2, 3).timeZoneOffset;
+      final tzOffsetDelimiter = "${tz.isNegative ? '-' : '+'}"
           "${tz.abs().inHours.toString().padLeft(2, '0')}"
           ":${(tz.inSeconds % 60).toString().padLeft(2, '0')}";
 
-      var pairs = {
+      final pairs = {
         "2001-02-03T00:00:00.000$tzOffsetDelimiter":
             new DateTime(2001, DateTime.february, 3),
         "2001-02-03T04:05:06.000$tzOffsetDelimiter":
@@ -304,7 +304,7 @@ void main() {
     });
 
     test("Encode Double", () {
-      var pairs = {
+      final pairs = {
         "'nan'": double.nan,
         "'infinity'": double.infinity,
         "'-infinity'": double.negativeInfinity,
@@ -356,8 +356,8 @@ void main() {
 
   test("UTF8String caches string regardless of which method is called first",
       () {
-    var u = new UTF8BackedString("abcd");
-    var v = new UTF8BackedString("abcd");
+    final u = new UTF8BackedString("abcd");
+    final v = new UTF8BackedString("abcd");
 
     u.utf8Length;
     v.utf8Bytes;

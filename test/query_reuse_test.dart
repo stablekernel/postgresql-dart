@@ -26,7 +26,7 @@ void main() {
 
     test("Call query multiple times with all parameter types succeeds",
         () async {
-      var insertQueryString =
+      final insertQueryString =
           "INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz) VALUES "
           "(${sid("i", PostgreSQLDataType.integer)}, ${sid("bi", PostgreSQLDataType.bigInteger)},"
           "${sid("bl", PostgreSQLDataType.boolean)}, ${sid("si", PostgreSQLDataType.smallInteger)},"
@@ -50,7 +50,7 @@ void main() {
 
       expect(hasCachedQueryNamed(connection, insertQueryString), true);
 
-      var expectedRow1 = [
+      final expectedRow1 = [
         1,
         1,
         2,
@@ -81,7 +81,7 @@ void main() {
 
       expect(hasCachedQueryNamed(connection, insertQueryString), true);
 
-      var expectedRow2 = [
+      final expectedRow2 = [
         2,
         2,
         3,
@@ -125,7 +125,7 @@ void main() {
     });
 
     test("Call query multiple times without type data succeeds ", () async {
-      var insertQueryString =
+      final insertQueryString =
           "INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz) VALUES "
           "(@i, @bi, @bl, @si, @t, @f, @d, @dt, @ts, @tsz) "
           "returning i, s, bi, bs, bl, si, t, f, d, dt, ts, tsz";
@@ -143,7 +143,7 @@ void main() {
         "tsz": new DateTime.utc(2000, 3)
       });
 
-      var expectedRow1 = [
+      final expectedRow1 = [
         1,
         1,
         2,
@@ -172,7 +172,7 @@ void main() {
         "tsz": new DateTime.utc(2001, 3)
       });
 
-      var expectedRow2 = [
+      final expectedRow2 = [
         2,
         2,
         3,
@@ -191,7 +191,7 @@ void main() {
 
     test("Call query multiple times with partial parameter type info succeeds",
         () async {
-      var insertQueryString =
+      final insertQueryString =
           "INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz) VALUES "
           "(${sid("i", PostgreSQLDataType.integer)}, @bi,"
           "${sid("bl", PostgreSQLDataType.boolean)}, @si,"
@@ -213,7 +213,7 @@ void main() {
         "tsz": new DateTime.utc(2000, 3)
       });
 
-      var expectedRow1 = [
+      final expectedRow1 = [
         1,
         1,
         2,
@@ -242,7 +242,7 @@ void main() {
         "tsz": new DateTime.utc(2001, 3)
       });
 
-      var expectedRow2 = [
+      final expectedRow2 = [
         2,
         2,
         3,
@@ -387,7 +387,7 @@ void main() {
     test(
         "Call a bunch of named and unnamed queries without awaiting, still process correctly",
         () async {
-      var futures = [
+      final futures = [
         connection.query("select i1, i2 from t where i1 > @i1",
             substitutionValues: {"i1": 1}),
         connection.execute("select 1"),
@@ -402,7 +402,7 @@ void main() {
             substitutionValues: {"i1": 2})
       ];
 
-      var results = await Future.wait(futures);
+      final results = await Future.wait(futures);
       expect(results, [
         [
           [2, 3],
@@ -470,7 +470,7 @@ void main() {
     test(
         "Trying to parse/describe a query with inaccurate types fails and does not cache query",
         () async {
-      var string =
+      final string =
           "insert into u (i1, i2) values (@i1:text, @i2:text) returning i1, i2";
       try {
         await connection
@@ -485,7 +485,8 @@ void main() {
     test(
         "A failed bind on initial query fails query, but can still make query later",
         () async {
-      var string = "insert into u (i1, i2) values (@i1, @i2) returning i1, i2";
+      final string =
+          "insert into u (i1, i2) values (@i1, @i2) returning i1, i2";
       try {
         await connection
             .query(string, substitutionValues: {"i1": "foo", "i2": "bar"});
@@ -516,7 +517,7 @@ void main() {
           "insert into u (i1, i2) values (@i1:int4, @i2:int4) returning i1, i2",
           substitutionValues: {"i1": 2, "i2": 3});
 
-      var string = "select i1, i2 from u where i1 = @i:int4";
+      final string = "select i1, i2 from u where i1 = @i:int4";
       var results =
           await connection.query(string, substitutionValues: {"i": 1});
       expect(results, [
@@ -543,12 +544,12 @@ void main() {
           substitutionValues: {"i1": 1, "i2": 2},
           allowReuse: false);
 
-      var string = "select i1, i2 from u where i1 = @i:int4";
+      final string = "select i1, i2 from u where i1 = @i:int4";
       // ignore: unawaited_futures
       connection
           .query(string, substitutionValues: {"i": "foo"}).catchError((e) {});
 
-      var results =
+      final results =
           await connection.query(string, substitutionValues: {"i": 1});
 
       expect(results, [
@@ -561,7 +562,7 @@ void main() {
 }
 
 Map<String, dynamic> cachedQueryMap(PostgreSQLConnection connection) {
-  var cacheMirror = reflect(connection).type.declarations.values.firstWhere(
+  final cacheMirror = reflect(connection).type.declarations.values.firstWhere(
       (DeclarationMirror dm) => dm.simpleName.toString().contains("_cache"));
   return reflect(connection)
       .getField(cacheMirror.simpleName)

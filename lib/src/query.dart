@@ -44,8 +44,9 @@ class Query<T> {
   }
 
   void sendSimple(Socket socket) {
-    var sqlString = PostgreSQLFormat.substitute(statement, substitutionValues);
-    var queryMessage = new QueryMessage(sqlString);
+    final sqlString =
+        PostgreSQLFormat.substitute(statement, substitutionValues);
+    final queryMessage = new QueryMessage(sqlString);
 
     socket.add(queryMessage.asBytes());
   }
@@ -58,9 +59,9 @@ class Query<T> {
       return;
     }
 
-    String statementName = (statementIdentifier ?? "");
-    var formatIdentifiers = <PostgreSQLFormatIdentifier>[];
-    var sqlString = PostgreSQLFormat.substitute(statement, substitutionValues,
+    final statementName = statementIdentifier ?? '';
+    final formatIdentifiers = <PostgreSQLFormatIdentifier>[];
+    final sqlString = PostgreSQLFormat.substitute(statement, substitutionValues,
         replace: (PostgreSQLFormatIdentifier identifier, int index) {
       formatIdentifiers.add(identifier);
 
@@ -69,16 +70,16 @@ class Query<T> {
 
     specifiedParameterTypeCodes = formatIdentifiers.map((i) => i.type).toList();
 
-    var parameterList = formatIdentifiers
+    final parameterList = formatIdentifiers
         .map((id) => new ParameterValue(id, substitutionValues))
         .toList();
 
-    var messages = [
+    final messages = [
       new ParseMessage(sqlString, statementName: statementName),
       new DescribeMessage(statementName: statementName),
       new BindMessage(parameterList, statementName: statementName),
       new ExecuteMessage(),
-      new SyncMessage()
+      new SyncMessage(),
     ];
 
     if (statementIdentifier != null) {
@@ -90,12 +91,12 @@ class Query<T> {
 
   void sendCachedQuery(Socket socket, CachedQuery cacheQuery,
       Map<String, dynamic> substitutionValues) {
-    var statementName = cacheQuery.preparedStatementName;
-    var parameterList = cacheQuery.orderedParameters
+    final statementName = cacheQuery.preparedStatementName;
+    final parameterList = cacheQuery.orderedParameters
         .map((identifier) => new ParameterValue(identifier, substitutionValues))
         .toList();
 
-    var bytes = ClientMessage.aggregateBytes([
+    final bytes = ClientMessage.aggregateBytes([
       new BindMessage(parameterList, statementName: statementName),
       new ExecuteMessage(),
       new SyncMessage()
@@ -105,8 +106,8 @@ class Query<T> {
   }
 
   PostgreSQLException validateParameters(List<int> parameterTypeIDs) {
-    var actualParameterTypeCodeIterator = parameterTypeIDs.iterator;
-    var parametersAreMismatched =
+    final actualParameterTypeCodeIterator = parameterTypeIDs.iterator;
+    final parametersAreMismatched =
         specifiedParameterTypeCodes.map((specifiedType) {
       actualParameterTypeCodeIterator.moveNext();
 
@@ -132,8 +133,8 @@ class Query<T> {
       return;
     }
 
-    var iterator = fieldDescriptions.iterator;
-    var lazyDecodedData = rawRowData.map((bd) {
+    final iterator = fieldDescriptions.iterator;
+    final lazyDecodedData = rawRowData.map((bd) {
       iterator.moveNext();
 
       return iterator.current.converter
@@ -227,9 +228,9 @@ class FieldDescription {
   String resolvedTableName;
 
   int parse(ByteData byteData, int initialOffset) {
-    var offset = initialOffset;
-    var buf = new StringBuffer();
-    var byte = 0;
+    int offset = initialOffset;
+    final buf = new StringBuffer();
+    int byte = 0;
     do {
       byte = byteData.getUint8(offset);
       offset += 1;
@@ -295,18 +296,18 @@ class PostgreSQLFormatIdentifier {
   };
 
   PostgreSQLFormatIdentifier(String t) {
-    var components = t.split("::");
+    final components = t.split("::");
     if (components.length > 1) {
       typeCast = components.sublist(1).join("");
     }
 
-    var variableComponents = components.first.split(":");
+    final variableComponents = components.first.split(":");
     if (variableComponents.length == 1) {
       name = variableComponents.first;
     } else if (variableComponents.length == 2) {
       name = variableComponents.first;
 
-      var dataTypeString = variableComponents.last;
+      final dataTypeString = variableComponents.last;
       if (dataTypeString != null) {
         type = typeStringToCodeMap[dataTypeString];
         if (type == null) {

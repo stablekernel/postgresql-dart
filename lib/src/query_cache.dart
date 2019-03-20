@@ -23,12 +23,12 @@ class QueryCache {
   }
 
   String identifierForQuery(Query<dynamic> query) {
-    var existing = queries[query.statement];
+    final existing = queries[query.statement];
     if (existing != null) {
       return existing.preparedStatementName;
     }
 
-    var string = "$idCounter".padLeft(12, "0");
+    final string = "$idCounter".padLeft(12, "0");
 
     idCounter++;
 

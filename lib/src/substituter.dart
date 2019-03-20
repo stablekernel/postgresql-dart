@@ -58,9 +58,9 @@ class PostgreSQLFormat {
     values ??= {};
     replace ??= (spec, index) => converter.convert(values[spec.name]);
 
-    var items = <PostgreSQLFormatToken>[];
+    final items = <PostgreSQLFormatToken>[];
     PostgreSQLFormatToken currentPtr;
-    var iterator = new RuneIterator(fmtString);
+    final iterator = new RuneIterator(fmtString);
 
     iterator.moveNext();
     while (iterator.current != null) {
@@ -118,14 +118,14 @@ class PostgreSQLFormat {
       } else if (t.buffer.length == 1 && t.buffer.toString() == '@') {
         return t.buffer;
       } else {
-        var identifier = new PostgreSQLFormatIdentifier(t.buffer.toString());
+        final identifier = new PostgreSQLFormatIdentifier(t.buffer.toString());
 
         if (!values.containsKey(identifier.name)) {
           throw new FormatException(
               "Format string specified identifier with name ${identifier.name}, but key was not present in values. Format string: $fmtString");
         }
 
-        var val = replace(identifier, idx);
+        final val = replace(identifier, idx);
         idx++;
 
         if (identifier.typeCast != null) {

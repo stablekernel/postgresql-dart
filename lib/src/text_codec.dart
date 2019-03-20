@@ -45,12 +45,12 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       return text;
     }
 
-    var backslashCodeUnit = r"\".codeUnitAt(0);
-    var quoteCodeUnit = r"'".codeUnitAt(0);
+    final backslashCodeUnit = r"\".codeUnitAt(0);
+    final quoteCodeUnit = r"'".codeUnitAt(0);
 
-    var quoteCount = 0;
-    var backslashCount = 0;
-    var it = new RuneIterator(text);
+    int quoteCount = 0;
+    int backslashCount = 0;
+    final it = new RuneIterator(text);
     while (it.moveNext()) {
       if (it.current == backslashCodeUnit) {
         backslashCount++;
@@ -59,7 +59,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       }
     }
 
-    var buf = new StringBuffer();
+    final buf = new StringBuffer();
 
     if (backslashCount > 0) {
       buf.write(" E");
@@ -120,11 +120,11 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       string = string.split("T").first;
     } else {
       if (!value.isUtc) {
-        var timezoneHourOffset = value.timeZoneOffset.inHours;
-        var timezoneMinuteOffset = value.timeZoneOffset.inMinutes % 60;
+        final timezoneHourOffset = value.timeZoneOffset.inHours;
+        final timezoneMinuteOffset = value.timeZoneOffset.inMinutes % 60;
 
         var hourComponent = timezoneHourOffset.abs().toString().padLeft(2, "0");
-        var minuteComponent =
+        final minuteComponent =
             timezoneMinuteOffset.abs().toString().padLeft(2, "0");
 
         if (timezoneHourOffset >= 0) {
@@ -133,7 +133,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
           hourComponent = '-$hourComponent';
         }
 
-        var timezoneString = [hourComponent, minuteComponent].join(":");
+        final timezoneString = [hourComponent, minuteComponent].join(":");
         string = [string, timezoneString].join("");
       }
     }

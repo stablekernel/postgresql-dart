@@ -13,7 +13,7 @@ class ErrorResponseMessage implements ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var lastByteRemovedList =
+    final lastByteRemovedList =
         new Uint8List.view(bytes.buffer, bytes.offsetInBytes, bytes.length - 1);
 
     lastByteRemovedList.forEach((byte) {
@@ -43,7 +43,7 @@ class AuthenticationMessage implements ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     type = view.getUint32(0);
 
     if (type == KindMD5Password) {
@@ -86,7 +86,7 @@ class BackendKeyMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
     secretKey = view.getUint32(4);
   }
@@ -97,14 +97,14 @@ class RowDescriptionMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
-    var offset = 0;
-    var fieldCount = view.getInt16(offset);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    int offset = 0;
+    final fieldCount = view.getInt16(offset);
     offset += 2;
 
     fieldDescriptions = <FieldDescription>[];
     for (var i = 0; i < fieldCount; i++) {
-      var rowDesc = new FieldDescription();
+      final rowDesc = new FieldDescription();
       offset = rowDesc.parse(view, offset);
       fieldDescriptions.add(rowDesc);
     }
@@ -116,13 +116,13 @@ class DataRowMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
-    var offset = 0;
-    var fieldCount = view.getInt16(offset);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    int offset = 0;
+    final fieldCount = view.getInt16(offset);
     offset += 2;
 
     for (var i = 0; i < fieldCount; i++) {
-      var dataSize = view.getInt32(offset);
+      final dataSize = view.getInt32(offset);
       offset += 4;
 
       if (dataSize == 0) {
@@ -130,7 +130,7 @@ class DataRowMessage extends ServerMessage {
       } else if (dataSize == -1) {
         values.add(null);
       } else {
-        var rawBytes = new ByteData.view(
+        final rawBytes = new ByteData.view(
             bytes.buffer, bytes.offsetInBytes + offset, dataSize);
         values.add(rawBytes);
         offset += dataSize;
@@ -149,7 +149,7 @@ class NotificationResponseMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
     channel = utf8.decode(bytes.sublist(4, bytes.indexOf(0, 4)));
     payload = utf8
@@ -164,9 +164,9 @@ class CommandCompleteMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var str = utf8.decode(bytes.sublist(0, bytes.length - 1));
+    final str = utf8.decode(bytes.sublist(0, bytes.length - 1));
 
-    var match = identifierExpression.firstMatch(str);
+    final match = identifierExpression.firstMatch(str);
     if (match.end < str.length) {
       rowsAffected = int.parse(str.split(" ").last);
     } else {
@@ -196,15 +196,15 @@ class ParameterDescriptionMessage extends ServerMessage {
 
   @override
   void readBytes(Uint8List bytes) {
-    var view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
+    final view = new ByteData.view(bytes.buffer, bytes.offsetInBytes);
 
-    var offset = 0;
-    var count = view.getUint16(0);
+    int offset = 0;
+    final count = view.getUint16(0);
     offset += 2;
 
     parameterTypeIDs = [];
     for (var i = 0; i < count; i++) {
-      var v = view.getUint32(offset);
+      final v = view.getUint32(offset);
       offset += 4;
       parameterTypeIDs.add(v);
     }

@@ -143,7 +143,7 @@ class PostgreSQLConnection extends Object
         _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
       }
 
-      var connectionComplete = new Completer();
+      final connectionComplete = new Completer();
       _socket.listen(_readData, onError: _close, onDone: _close);
 
       _transitionToState(
@@ -203,7 +203,8 @@ class PostgreSQLConnection extends Object
           "Attempting to execute query, but connection is not open.");
     }
 
-    var proxy = new _TransactionProxy(this, queryBlock, commitTimeoutInSeconds);
+    final proxy =
+        new _TransactionProxy(this, queryBlock, commitTimeoutInSeconds);
 
     await _enqueue(proxy.beginQuery);
 
@@ -248,7 +249,7 @@ class PostgreSQLConnection extends Object
     // anything with that data.
     _framer.addBytes(castBytes(bytes));
     while (_framer.hasMessage) {
-      var msg = _framer.popMessage().message;
+      final msg = _framer.popMessage().message;
       try {
         if (msg is ErrorResponseMessage) {
           _transitionToState(_connectionState.onErrorResponse(msg));
@@ -266,25 +267,22 @@ class PostgreSQLConnection extends Object
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
       {int timeout = 30}) {
-    var sslCompleter = new Completer<int>();
+    final sslCompleter = new Completer<int>();
 
-    originalSocket.listen(
-        (data) {
-          if (data.length != 1) {
-            sslCompleter.completeError(new PostgreSQLException(
-                "Could not initalize SSL connection, received unknown byte stream."));
-            return;
-          }
+    originalSocket.listen((data) {
+      if (data.length != 1) {
+        sslCompleter.completeError(new PostgreSQLException(
+            "Could not initalize SSL connection, received unknown byte stream."));
+        return;
+      }
 
-          sslCompleter.complete(data.first);
-        },
+      sslCompleter.complete(data.first);
+    },
         onDone: () => sslCompleter.completeError(new PostgreSQLException(
             "Could not initialize SSL connection, connection closed during handshake.")),
-        onError: (err) {
-          sslCompleter.completeError(err);
-        });
+        onError: sslCompleter.completeError);
 
-    var byteBuffer = new ByteData(8);
+    final byteBuffer = new ByteData(8);
     byteBuffer.setUint32(0, 8);
     byteBuffer.setUint32(4, 80877103);
     originalSocket.add(byteBuffer.buffer.asUint8List());
@@ -350,7 +348,7 @@ abstract class _PostgreSQLExecutionContextMixin
           "Attempting to execute query, but connection is not open.");
     }
 
-    var query = new Query<List<List<dynamic>>>(
+    final query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, _connection, _transaction);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
@@ -371,7 +369,7 @@ abstract class _PostgreSQLExecutionContextMixin
           "Attempting to execute query, but connection is not open.");
     }
 
-    var query = new Query<List<List<dynamic>>>(
+    final query = new Query<List<List<dynamic>>>(
         fmtString, substitutionValues, _connection, _transaction);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
@@ -391,7 +389,7 @@ abstract class _PostgreSQLExecutionContextMixin
           "Attempting to execute query, but connection is not open.");
     }
 
-    var query =
+    final query =
         new Query<int>(fmtString, substitutionValues, _connection, _transaction)
           ..onlyReturnAffectedRowCount = true;
 
@@ -423,7 +421,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
     final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
     return rows.map((row) {
-      var rowMap = new Map<String, Map<String, dynamic>>.fromIterable(
+      final rowMap = new Map<String, Map<String, dynamic>>.fromIterable(
           tableNames,
           key: (name) => name as String,
           value: (_) => <String, dynamic>{});

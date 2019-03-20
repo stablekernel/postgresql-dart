@@ -22,7 +22,7 @@ void main() {
       messageWithBytes([1, 2, 3], 1)
     ]));
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -36,7 +36,7 @@ void main() {
       messageWithBytes([1, 2, 3, 4], 2)
     ]));
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -48,14 +48,14 @@ void main() {
   });
 
   test("Header fragment", () {
-    var message = messageWithBytes([1, 2, 3], 1);
-    var fragments = fragmentedMessageBuffer(message, 2);
+    final message = messageWithBytes([1, 2, 3], 1);
+    final fragments = fragmentedMessageBuffer(message, 2);
     framer.addBytes(fragments.first);
     expect(framer.messageQueue, isEmpty);
 
     framer.addBytes(fragments.last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -64,9 +64,9 @@ void main() {
   });
 
   test("Two header fragments", () {
-    var message = messageWithBytes([1, 2, 3], 1);
-    var fragments = fragmentedMessageBuffer(message, 2);
-    var moreFragments = fragmentedMessageBuffer(fragments.first, 1);
+    final message = messageWithBytes([1, 2, 3], 1);
+    final fragments = fragmentedMessageBuffer(message, 2);
+    final moreFragments = fragmentedMessageBuffer(fragments.first, 1);
 
     framer.addBytes(moreFragments.first);
     expect(framer.messageQueue, isEmpty);
@@ -76,7 +76,7 @@ void main() {
 
     framer.addBytes(fragments.last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -85,9 +85,9 @@ void main() {
   });
 
   test("One message + header fragment", () {
-    var message1 = messageWithBytes([1, 2, 3], 1);
-    var message2 = messageWithBytes([2, 2, 3], 2);
-    var message2Fragments = fragmentedMessageBuffer(message2, 3);
+    final message1 = messageWithBytes([1, 2, 3], 1);
+    final message2 = messageWithBytes([2, 2, 3], 2);
+    final message2Fragments = fragmentedMessageBuffer(message2, 3);
 
     framer.addBytes(bufferWithMessages([message1, message2Fragments.first]));
 
@@ -95,7 +95,7 @@ void main() {
 
     framer.addBytes(message2Fragments.last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -107,9 +107,9 @@ void main() {
   });
 
   test("Message + header, missing rest of buffer", () {
-    var message1 = messageWithBytes([1, 2, 3], 1);
-    var message2 = messageWithBytes([2, 2, 3], 2);
-    var message2Fragments = fragmentedMessageBuffer(message2, 5);
+    final message1 = messageWithBytes([1, 2, 3], 1);
+    final message2 = messageWithBytes([2, 2, 3], 2);
+    final message2Fragments = fragmentedMessageBuffer(message2, 5);
 
     framer.addBytes(bufferWithMessages([message1, message2Fragments.first]));
 
@@ -117,7 +117,7 @@ void main() {
 
     framer.addBytes(message2Fragments.last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -129,14 +129,14 @@ void main() {
   });
 
   test("Message body spans two packets", () {
-    var message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
-    var fragments = fragmentedMessageBuffer(message, 8);
+    final message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
+    final fragments = fragmentedMessageBuffer(message, 8);
     framer.addBytes(fragments.first);
     expect(framer.messageQueue, isEmpty);
 
     framer.addBytes(fragments.last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 1
@@ -147,8 +147,8 @@ void main() {
   test(
       "Message spans two packets, started in a packet that contained another message",
       () {
-    var earlierMessage = messageWithBytes([1, 2], 0);
-    var message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
+    final earlierMessage = messageWithBytes([1, 2], 0);
+    final message = messageWithBytes([1, 2, 3, 4, 5, 6, 7], 1);
 
     framer.addBytes(bufferWithMessages(
         [earlierMessage, fragmentedMessageBuffer(message, 8).first]));
@@ -156,7 +156,7 @@ void main() {
 
     framer.addBytes(fragmentedMessageBuffer(message, 8).last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 0
@@ -168,8 +168,8 @@ void main() {
   });
 
   test("Message spans three packets, only part of header in the first", () {
-    var earlierMessage = messageWithBytes([1, 2], 0);
-    var message =
+    final earlierMessage = messageWithBytes([1, 2], 0);
+    final message =
         messageWithBytes([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13], 1);
 
     framer.addBytes(bufferWithMessages(
@@ -185,7 +185,7 @@ void main() {
         fragmentedMessageBuffer(fragmentedMessageBuffer(message, 3).last, 6)
             .last);
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
       new UnknownMessage()
         ..code = 0
@@ -200,15 +200,15 @@ void main() {
   test("Frame with no data", () {
     framer.addBytes(bufferWithMessages([messageWithBytes([], 10)]));
 
-    var messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [new UnknownMessage()..code = 10]);
   });
 }
 
 List<int> messageWithBytes(List<int> bytes, int messageID) {
-  var buffer = new BytesBuilder();
+  final buffer = new BytesBuilder();
   buffer.addByte(messageID);
-  var lengthBuffer = new ByteData(4);
+  final lengthBuffer = new ByteData(4);
   lengthBuffer.setUint32(0, bytes.length + 4);
   buffer.add(lengthBuffer.buffer.asUint8List());
   buffer.add(bytes);
@@ -216,8 +216,8 @@ List<int> messageWithBytes(List<int> bytes, int messageID) {
 }
 
 List<Uint8List> fragmentedMessageBuffer(List<int> message, int pivotPoint) {
-  var l1 = message.sublist(0, pivotPoint);
-  var l2 = message.sublist(pivotPoint, message.length);
+  final l1 = message.sublist(0, pivotPoint);
+  final l2 = message.sublist(pivotPoint, message.length);
   return [castBytes(l1), castBytes(l2)];
 }
 
@@ -231,7 +231,7 @@ flush(MessageFramer framer) {
     messageWithBytes([1, 2, 3], 1)
   ]));
 
-  var messages = framer.messageQueue.map((f) => f.message).toList();
+  final messages = framer.messageQueue.map((f) => f.message).toList();
   expect(messages, [
     new UnknownMessage()
       ..code = 1
