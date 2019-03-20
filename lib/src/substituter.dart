@@ -5,7 +5,7 @@ import 'query.dart';
 class PostgreSQLFormat {
   static int _AtSignCodeUnit = "@".codeUnitAt(0);
 
-  static String id(String name, {PostgreSQLDataType type: null}) {
+  static String id(String name, {PostgreSQLDataType type}) {
     if (type != null) {
       return "@$name:${dataTypeStringForDataType(type)}";
     }
@@ -53,13 +53,13 @@ class PostgreSQLFormat {
   }
 
   static String substitute(String fmtString, Map<String, dynamic> values,
-      {SQLReplaceIdentifierFunction replace: null}) {
+      {SQLReplaceIdentifierFunction replace}) {
     final converter = new PostgresTextEncoder(true);
     values ??= {};
     replace ??= (spec, index) => converter.convert(values[spec.name]);
 
     var items = <PostgreSQLFormatToken>[];
-    PostgreSQLFormatToken currentPtr = null;
+    PostgreSQLFormatToken currentPtr;
     var iterator = new RuneIterator(fmtString);
 
     iterator.moveNext();

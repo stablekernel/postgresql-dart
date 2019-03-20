@@ -55,7 +55,7 @@ class StartupMessage extends ClientMessage {
     }
   }
 
-  UTF8BackedString username = null;
+  UTF8BackedString username;
   UTF8BackedString databaseName;
   UTF8BackedString timeZone;
 
@@ -134,7 +134,7 @@ class QueryMessage extends ClientMessage {
 }
 
 class ParseMessage extends ClientMessage {
-  ParseMessage(String statement, {String statementName: ""}) {
+  ParseMessage(String statement, {String statementName = ''}) {
     this.statement = new UTF8BackedString(statement);
     this.statementName = new UTF8BackedString(statementName);
   }
@@ -157,7 +157,7 @@ class ParseMessage extends ClientMessage {
 }
 
 class DescribeMessage extends ClientMessage {
-  DescribeMessage({String statementName: ""}) {
+  DescribeMessage({String statementName = ''}) {
     this.statementName = new UTF8BackedString(statementName);
   }
 
@@ -176,7 +176,7 @@ class DescribeMessage extends ClientMessage {
 }
 
 class BindMessage extends ClientMessage {
-  BindMessage(this.parameters, {String statementName: ""}) {
+  BindMessage(this.parameters, {String statementName = ''}) {
     typeSpecCount = parameters.where((p) => p.isBinary).length;
     this.statementName = new UTF8BackedString(statementName);
   }
@@ -197,7 +197,8 @@ class BindMessage extends ClientMessage {
       _cachedLength = 15;
       _cachedLength += statementName.utf8Length;
       _cachedLength += inputParameterElementCount * 2;
-      _cachedLength += parameters.fold(0, (len, ParameterValue paramValue) {
+      _cachedLength +=
+          parameters.fold<int>(0, (len, ParameterValue paramValue) {
         if (paramValue.bytes == null) {
           return len + 4;
         } else {

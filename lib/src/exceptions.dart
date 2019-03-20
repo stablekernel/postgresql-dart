@@ -35,7 +35,7 @@ enum PostgreSQLSeverity {
 /// Exception thrown by [PostgreSQLConnection] instances.
 class PostgreSQLException implements Exception {
   PostgreSQLException(String message,
-      {PostgreSQLSeverity severity: PostgreSQLSeverity.error,
+      {PostgreSQLSeverity severity = PostgreSQLSeverity.error,
       this.stackTrace}) {
     this.severity = severity;
     this.message = message;

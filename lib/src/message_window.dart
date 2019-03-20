@@ -31,10 +31,10 @@ class MessageFrame {
   Uint8List data;
 
   ServerMessage get message {
-    var msgMaker =
+    final msgMaker =
         messageTypeMap[type] ?? () => new UnknownMessage()..code = type;
 
-    ServerMessage msg = msgMaker();
+    final msg = msgMaker() as ServerMessage;
     msg.readBytes(data);
     return msg;
   }

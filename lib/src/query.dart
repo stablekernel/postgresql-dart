@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:buffer/buffer.dart';
+
 import 'package:postgres/src/binary_codec.dart';
 import 'package:postgres/src/execution_context.dart';
 
@@ -37,7 +39,7 @@ class Query<T> {
 
   List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
 
-  void set fieldDescriptions(List<FieldDescription> fds) {
+  set fieldDescriptions(List<FieldDescription> fds) {
     _fieldDescriptions = fds;
     cache?.fieldDescriptions = fds;
   }
@@ -49,7 +51,7 @@ class Query<T> {
     socket.add(queryMessage.asBytes());
   }
 
-  void sendExtended(Socket socket, {CachedQuery cacheQuery: null}) {
+  void sendExtended(Socket socket, {CachedQuery cacheQuery}) {
     if (cacheQuery != null) {
       fieldDescriptions = cacheQuery.fieldDescriptions;
       sendCachedQuery(socket, cacheQuery, substitutionValues);
@@ -201,7 +203,7 @@ class ParameterValue {
   ParameterValue.text(dynamic value) : isBinary = false {
     if (value != null) {
       final converter = new PostgresTextEncoder(false);
-      bytes = utf8.encode(converter.convert(value));
+      bytes = castBytes(utf8.encode(converter.convert(value)));
     }
     length = bytes?.length;
   }

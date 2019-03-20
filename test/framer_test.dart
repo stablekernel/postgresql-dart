@@ -1,8 +1,11 @@
-import 'package:postgres/src/message_window.dart';
-import 'package:postgres/src/server_messages.dart';
-import 'package:test/test.dart';
 import 'dart:typed_data';
 import 'dart:io';
+
+import 'package:buffer/buffer.dart';
+import 'package:test/test.dart';
+
+import 'package:postgres/src/message_window.dart';
+import 'package:postgres/src/server_messages.dart';
 
 void main() {
   MessageFramer framer;
@@ -212,13 +215,13 @@ List<int> messageWithBytes(List<int> bytes, int messageID) {
   return buffer.toBytes();
 }
 
-List<List<int>> fragmentedMessageBuffer(List<int> message, int pivotPoint) {
+List<Uint8List> fragmentedMessageBuffer(List<int> message, int pivotPoint) {
   var l1 = message.sublist(0, pivotPoint);
   var l2 = message.sublist(pivotPoint, message.length);
-  return [l1, l2];
+  return [castBytes(l1), castBytes(l2)];
 }
 
-List<int> bufferWithMessages(List<List<int>> messages) {
+Uint8List bufferWithMessages(List<List<int>> messages) {
   return new Uint8List.fromList(messages.expand((l) => l).toList());
 }
 

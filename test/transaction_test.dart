@@ -6,7 +6,7 @@ import 'dart:async';
 
 void main() {
   group("Transaction behavior", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     setUp(() async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
@@ -22,15 +22,16 @@ void main() {
     test("Rows are Lists of column values", () async {
       await conn.execute("INSERT INTO t (id) VALUES (1)");
 
-      final List<List<dynamic>> outValue = await conn.transaction((ctx) async {
+      final outValue = await conn.transaction((ctx) async {
         return await ctx.query('SELECT * FROM t WHERE id = @id LIMIT 1',
             substitutionValues: {'id': 1});
-      });
+      }) as List;
 
       expect(outValue.length, 1);
       expect(outValue.first is List, true);
-      expect(outValue.first.length, 1);
-      expect(outValue.first.first, 1);
+      final firstItem = outValue.first as List;
+      expect(firstItem.length, 1);
+      expect(firstItem.first, 1);
     });
 
     test("Send successful transaction succeeds, returns returned value",
@@ -297,7 +298,7 @@ void main() {
   // After a transaction fails, the changes must be rolled back, it should continue with pending queries, pending transactions, later queries, later transactions
 
   group("Transaction:Query recovery", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     setUp(() async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
@@ -396,7 +397,7 @@ void main() {
   });
 
   group("Transaction:Exception recovery", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     setUp(() async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
@@ -534,7 +535,7 @@ void main() {
   });
 
   group("Transaction:Rollback recovery", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     setUp(() async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test",

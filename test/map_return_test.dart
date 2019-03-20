@@ -140,15 +140,15 @@ void main() {
 
 class InterceptingConnection extends PostgreSQLConnection {
   InterceptingConnection(String host, int port, String databaseName,
-      {String username: null, String password: null})
+      {String username, String password})
       : super(host, port, databaseName, username: username, password: password);
 
   List<String> queries = [];
 
   @override
   Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null,
-      bool allowReuse: true,
+      {Map<String, dynamic> substitutionValues,
+      bool allowReuse = true,
       int timeoutInSeconds}) {
     queries.add(fmtString);
     return super.query(fmtString,

@@ -11,7 +11,7 @@ class _TransactionProxy extends Object
     beginQuery = new Query<int>("BEGIN", {}, _connection, this)
       ..onlyReturnAffectedRowCount = true;
 
-    beginQuery.future.then(startTransaction).catchError((err, st) {
+    beginQuery.future.then(startTransaction).catchError((err, StackTrace st) {
       new Future(() {
         completer.completeError(err, st);
       });
@@ -32,7 +32,7 @@ class _TransactionProxy extends Object
   bool _hasFailed = false;
   bool _hasRolledBack = false;
 
-  void cancelTransaction({String reason: null}) {
+  void cancelTransaction({String reason}) {
     throw new _TransactionRollbackException(reason);
   }
 

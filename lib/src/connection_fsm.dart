@@ -64,7 +64,7 @@ class _PostgreSQLConnectionStateSocketConnected
   }
 
   _PostgreSQLConnectionState onMessage(ServerMessage message) {
-    AuthenticationMessage authMessage = message;
+    final authMessage = message as AuthenticationMessage;
 
     // Pass on the pending op to subsequent stages
     if (authMessage.type == AuthenticationMessage.KindOK) {
@@ -217,7 +217,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
   _PostgreSQLConnectionStateBusy(this.query);
 
   Query<dynamic> query;
-  PostgreSQLException returningException = null;
+  PostgreSQLException returningException;
   int rowsAffected = 0;
 
   _PostgreSQLConnectionState onErrorResponse(ErrorResponseMessage message) {
@@ -245,7 +245,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
       if (message.state == ReadyForQueryMessage.StateTransactionError) {
         query.completeError(returningException);
         return new _PostgreSQLConnectionStateReadyInTransaction(
-            query.transaction);
+            query.transaction as _TransactionProxy);
       }
 
       if (returningException != null) {
@@ -256,7 +256,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
 
       if (message.state == ReadyForQueryMessage.StateTransaction) {
         return new _PostgreSQLConnectionStateReadyInTransaction(
-            query.transaction);
+            query.transaction as _TransactionProxy);
       }
 
       return new _PostgreSQLConnectionStateIdle();

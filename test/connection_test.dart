@@ -7,7 +7,7 @@ import 'dart:mirrors';
 
 void main() {
   group("Connection lifecycle", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     tearDown(() async {
       await conn?.close();
@@ -64,8 +64,8 @@ void main() {
       var socketMirror = reflect(conn).type.declarations.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
-      Socket underlyingSocket =
-          reflect(conn).getField(socketMirror.simpleName).reflectee;
+      final underlyingSocket =
+          reflect(conn).getField(socketMirror.simpleName).reflectee as Socket;
       expect(await underlyingSocket.done, isNotNull);
 
       conn = null;
@@ -82,8 +82,8 @@ void main() {
       var socketMirror = reflect(conn).type.declarations.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_socket"));
-      Socket underlyingSocket =
-          reflect(conn).getField(socketMirror.simpleName).reflectee;
+      final underlyingSocket =
+          reflect(conn).getField(socketMirror.simpleName).reflectee as Socket;
       expect(await underlyingSocket.done, isNotNull);
 
       conn = null;
@@ -145,7 +145,7 @@ void main() {
   });
 
   group("Successful queries over time", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
 
     setUp(() async {
       conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
@@ -221,7 +221,7 @@ void main() {
   });
 
   group("Unintended user-error situations", () {
-    PostgreSQLConnection conn = null;
+    PostgreSQLConnection conn;
     Future openFuture;
 
     tearDown(() async {
@@ -372,8 +372,8 @@ void main() {
       var queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_queue"));
-      List<dynamic> queue =
-          reflect(conn).getField(queueMirror.simpleName).reflectee;
+      final queue =
+          reflect(conn).getField(queueMirror.simpleName).reflectee as List;
       expect(queue, isEmpty);
     });
 
@@ -439,15 +439,15 @@ void main() {
       var queueMirror = reflect(conn).type.instanceMembers.values.firstWhere(
           (DeclarationMirror dm) =>
               dm.simpleName.toString().contains("_queue"));
-      List<dynamic> queue =
-          reflect(conn).getField(queueMirror.simpleName).reflectee;
+      final queue =
+          reflect(conn).getField(queueMirror.simpleName).reflectee as List;
       expect(queue, isEmpty);
     });
   });
 
   group("Network error situations", () {
-    ServerSocket serverSocket = null;
-    Socket socket = null;
+    ServerSocket serverSocket;
+    Socket socket;
 
     tearDown(() async {
       await serverSocket?.close();

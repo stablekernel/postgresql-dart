@@ -4,6 +4,8 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
+import 'package:buffer/buffer.dart';
+
 import 'package:postgres/src/query_cache.dart';
 import 'package:postgres/src/execution_context.dart';
 import 'package:postgres/src/query_queue.dart';
@@ -38,12 +40,12 @@ class PostgreSQLConnection extends Object
   /// [timeZone] is the timezone the connection is in. Defaults to 'UTC'.
   /// [useSSL] when true, uses a secure socket when connecting to a PostgreSQL database.
   PostgreSQLConnection(this.host, this.port, this.databaseName,
-      {this.username: null,
-      this.password: null,
-      this.timeoutInSeconds: 30,
-      this.queryTimeoutInSeconds: 30,
-      this.timeZone: "UTC",
-      this.useSSL: false}) {
+      {this.username,
+      this.password,
+      this.timeoutInSeconds = 30,
+      this.queryTimeoutInSeconds = 30,
+      this.timeZone = 'UTC',
+      this.useSSL = false}) {
     _connectionState = new _PostgreSQLConnectionStateClosed();
     _connectionState.connection = this;
   }
@@ -143,7 +145,8 @@ class PostgreSQLConnection extends Object
 
       var connectionComplete = new Completer();
       _socket.listen(_readData,
-          onError: (err, st) => _close(err, st), onDone: () => _close());
+          onError: (err, StackTrace st) => _close(err, st),
+          onDone: () => _close());
 
       _transitionToState(
           new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
@@ -195,8 +198,7 @@ class PostgreSQLConnection extends Object
   /// If specified, the final `"COMMIT"` query of the transaction will use
   /// [commitTimeoutInSeconds] as its timeout, otherwise the connection's
   /// default query timeout will be used.
-  Future<dynamic> transaction(
-      Future<dynamic> queryBlock(PostgreSQLExecutionContext connection),
+  Future transaction(Future queryBlock(PostgreSQLExecutionContext connection),
       {int commitTimeoutInSeconds}) async {
     if (isClosed) {
       throw new PostgreSQLException(
@@ -210,7 +212,7 @@ class PostgreSQLConnection extends Object
     return await proxy.completer.future;
   }
 
-  void cancelTransaction({String reason: null}) {
+  void cancelTransaction({String reason}) {
     // Default is no-op
   }
 
@@ -245,7 +247,7 @@ class PostgreSQLConnection extends Object
     // and the state node managing delivering data to the query no longer exists. Therefore,
     // as soon as a close occurs, we detach the data stream from anything that actually does
     // anything with that data.
-    _framer.addBytes(bytes);
+    _framer.addBytes(castBytes(bytes));
     while (_framer.hasMessage) {
       var msg = _framer.popMessage().message;
       try {
@@ -263,7 +265,8 @@ class PostgreSQLConnection extends Object
     }
   }
 
-  Future<Socket> _upgradeSocketToSSL(Socket originalSocket, {int timeout: 30}) {
+  Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
+      {int timeout = 30}) {
     var sslCompleter = new Completer<int>();
 
     originalSocket.listen(
@@ -337,8 +340,8 @@ abstract class _PostgreSQLExecutionContextMixin
   int get queueSize => _queue.length;
 
   Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues: null,
-      bool allowReuse: true,
+      {Map<String, dynamic> substitutionValues,
+      bool allowReuse = true,
       int timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
@@ -357,8 +360,8 @@ abstract class _PostgreSQLExecutionContextMixin
 
   Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
       String fmtString,
-      {Map<String, dynamic> substitutionValues: null,
-      bool allowReuse: true,
+      {Map<String, dynamic> substitutionValues,
+      bool allowReuse = true,
       int timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
@@ -378,7 +381,7 @@ abstract class _PostgreSQLExecutionContextMixin
   }
 
   Future<int> execute(String fmtString,
-      {Map<String, dynamic> substitutionValues: null, int timeoutInSeconds}) {
+      {Map<String, dynamic> substitutionValues, int timeoutInSeconds}) {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw new PostgreSQLException(
@@ -392,7 +395,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
   }
 
-  void cancelTransaction({String reason: null});
+  void cancelTransaction({String reason});
 
   Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
       List<List<dynamic>> rows, List<FieldDescription> columns) async {
@@ -418,7 +421,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return rows.map((row) {
       var rowMap = new Map<String, Map<String, dynamic>>.fromIterable(
           tableNames,
-          key: (name) => name,
+          key: (name) => name as String,
           value: (_) => <String, dynamic>{});
 
       final iterator = columns.iterator;
@@ -441,12 +444,12 @@ abstract class _PostgreSQLExecutionContextMixin
     orderedTableNames.forEach((tableName) {
       iterator.moveNext();
       if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = tableName.first;
+        _tableOIDNameMap[iterator.current] = tableName.first as String;
       }
     });
   }
 
-  Future<T> _enqueue<T>(Query<T> query, {int timeoutInSeconds: 30}) async {
+  Future<T> _enqueue<T>(Query<T> query, {int timeoutInSeconds = 30}) async {
     if (_queue.add(query)) {
       _connection._transitionToState(_connection._connectionState.awake());
 

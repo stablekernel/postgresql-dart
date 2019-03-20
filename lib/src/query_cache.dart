@@ -14,7 +14,7 @@ class QueryCache {
     }
   }
 
-  operator [](String statementId) {
+  CachedQuery operator [](String statementId) {
     if (statementId == null) {
       return null;
     }
