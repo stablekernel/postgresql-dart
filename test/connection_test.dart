@@ -17,7 +17,7 @@ void main() {
     });
 
     test("Connect with md5 auth required", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
 
       await conn.open();
@@ -26,7 +26,7 @@ void main() {
     });
 
     test("SSL Connect with md5 auth required", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart", useSSL: true);
 
       await conn.open();
@@ -41,7 +41,7 @@ void main() {
     });
 
     test("Connect with no auth required", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -49,7 +49,7 @@ void main() {
     });
 
     test("SSL Connect with no auth required", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust", useSSL: true);
       await conn.open();
 
@@ -58,7 +58,7 @@ void main() {
 
     test("Closing idle connection succeeds, closes underlying socket",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -76,7 +76,7 @@ void main() {
 
     test("SSL Closing idle connection succeeds, closes underlying socket",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust", useSSL: true);
       await conn.open();
 
@@ -95,7 +95,7 @@ void main() {
     test(
         "Closing connection while busy succeeds, queued queries are all accounted for (canceled), closes underlying socket",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -122,7 +122,7 @@ void main() {
     test(
         "SSL Closing connection while busy succeeds, queued queries are all accounted for (canceled), closes underlying socket",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust", useSSL: true);
       await conn.open();
 
@@ -151,7 +151,7 @@ void main() {
     PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
     });
@@ -233,7 +233,7 @@ void main() {
     });
 
     test("Sending queries to opening connection triggers error", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       openFuture = conn.open();
 
@@ -246,7 +246,7 @@ void main() {
     });
 
     test("SSL Sending queries to opening connection triggers error", () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust", useSSL: true);
       openFuture = conn.open();
 
@@ -260,7 +260,7 @@ void main() {
 
     test("Starting transaction while opening connection triggers error",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       openFuture = conn.open();
 
@@ -276,7 +276,7 @@ void main() {
 
     test("SSL Starting transaction while opening connection triggers error",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust", useSSL: true);
       openFuture = conn.open();
 
@@ -292,7 +292,7 @@ void main() {
 
     test("Invalid password reports error, conn is closed, disables conn",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "notdart");
 
       try {
@@ -307,7 +307,7 @@ void main() {
 
     test("SSL Invalid password reports error, conn is closed, disables conn",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "notdart", useSSL: true);
 
       try {
@@ -322,7 +322,7 @@ void main() {
 
     test("A query error maintains connectivity, allows future queries",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -341,7 +341,7 @@ void main() {
     test(
         "A query error maintains connectivity, continues processing pending queries",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -383,7 +383,7 @@ void main() {
     test(
         "A query error maintains connectivity, continues processing pending transactions",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -415,7 +415,7 @@ void main() {
     test(
         "Building query throws error, connection continues processing pending queries",
         () async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "darttrust");
       await conn.open();
 
@@ -460,7 +460,7 @@ void main() {
     test(
         "Socket fails to connect reports error, disables connection for future use",
         () async {
-      final conn = new PostgreSQLConnection("localhost", 5431, "dart_test");
+      final conn = PostgreSQLConnection("localhost", 5431, "dart_test");
 
       try {
         await conn.open();
@@ -473,8 +473,8 @@ void main() {
     test(
         "SSL Socket fails to connect reports error, disables connection for future use",
         () async {
-      final conn = new PostgreSQLConnection("localhost", 5431, "dart_test",
-          useSSL: true);
+      final conn =
+          PostgreSQLConnection("localhost", 5431, "dart_test", useSSL: true);
 
       try {
         await conn.open();
@@ -495,7 +495,7 @@ void main() {
         s.listen((bytes) {});
       });
 
-      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2);
 
       try {
@@ -517,7 +517,7 @@ void main() {
         s.listen((bytes) {});
       });
 
-      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2, useSSL: true);
 
       try {
@@ -530,18 +530,17 @@ void main() {
 
     test("Connection that times out triggers future for pending queries",
         () async {
-      final openCompleter = new Completer();
+      final openCompleter = Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
-        new Future.delayed(
-            new Duration(milliseconds: 100), openCompleter.complete);
+        Future.delayed(Duration(milliseconds: 100), openCompleter.complete);
       });
 
-      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2);
       conn.open().catchError((e) {});
 
@@ -557,18 +556,17 @@ void main() {
 
     test("SSL Connection that times out triggers future for pending queries",
         () async {
-      final openCompleter = new Completer();
+      final openCompleter = Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
       serverSocket.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
-        new Future.delayed(
-            new Duration(milliseconds: 100), openCompleter.complete);
+        Future.delayed(Duration(milliseconds: 100), openCompleter.complete);
       });
 
-      final conn = new PostgreSQLConnection("localhost", 5433, "dart_test",
+      final conn = PostgreSQLConnection("localhost", 5433, "dart_test",
           timeoutInSeconds: 2, useSSL: true);
       conn.open().catchError((e) {
         return null;
@@ -591,7 +589,7 @@ void main() {
   });
 
   test("If connection is closed, do not allow .execute", () async {
-    final conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    final conn = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     try {
       await conn.execute("SELECT 1");
@@ -602,7 +600,7 @@ void main() {
   });
 
   test("If connection is closed, do not allow .query", () async {
-    final conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    final conn = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     try {
       await conn.query("SELECT 1");
@@ -613,7 +611,7 @@ void main() {
   });
 
   test("If connection is closed, do not allow .mappedResultsQuery", () async {
-    final conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    final conn = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     try {
       await conn.mappedResultsQuery("SELECT 1");
@@ -626,7 +624,7 @@ void main() {
   test(
       "Queue size, should be 0 on open, >0 if queries added and 0 again after queries executed",
       () async {
-    final conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    final conn = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     await conn.open();
     expect(conn.queueSize, 0);

@@ -35,13 +35,13 @@ abstract class ClientMessage {
   void applyToBuffer(ByteDataWriter buffer);
 
   Uint8List asBytes() {
-    final buffer = new ByteDataWriter();
+    final buffer = ByteDataWriter();
     applyToBuffer(buffer);
     return buffer.toBytes();
   }
 
   static Uint8List aggregateBytes(List<ClientMessage> messages) {
-    final buffer = new ByteDataWriter();
+    final buffer = ByteDataWriter();
     messages.forEach((cm) => cm.applyToBuffer(buffer));
     return buffer.toBytes();
   }
@@ -49,10 +49,10 @@ abstract class ClientMessage {
 
 class StartupMessage extends ClientMessage {
   StartupMessage(String databaseName, String timeZone, {String username}) {
-    this.databaseName = new UTF8BackedString(databaseName);
-    this.timeZone = new UTF8BackedString(timeZone);
+    this.databaseName = UTF8BackedString(databaseName);
+    this.timeZone = UTF8BackedString(timeZone);
     if (username != null) {
-      this.username = new UTF8BackedString(username);
+      this.username = UTF8BackedString(username);
     }
   }
 
@@ -99,10 +99,10 @@ class StartupMessage extends ClientMessage {
 class AuthMD5Message extends ClientMessage {
   AuthMD5Message(String username, String password, List<int> saltBytes) {
     final passwordHash = md5.convert('$password$username'.codeUnits).toString();
-    final saltString = new String.fromCharCodes(saltBytes);
+    final saltString = String.fromCharCodes(saltBytes);
     final md5Hash =
         md5.convert('$passwordHash$saltString'.codeUnits).toString();
-    hashedAuthString = new UTF8BackedString('md5$md5Hash');
+    hashedAuthString = UTF8BackedString('md5$md5Hash');
   }
 
   UTF8BackedString hashedAuthString;
@@ -122,7 +122,7 @@ class AuthMD5Message extends ClientMessage {
 
 class QueryMessage extends ClientMessage {
   QueryMessage(String queryString) {
-    this.queryString = new UTF8BackedString(queryString);
+    this.queryString = UTF8BackedString(queryString);
   }
 
   UTF8BackedString queryString;
@@ -142,8 +142,8 @@ class QueryMessage extends ClientMessage {
 
 class ParseMessage extends ClientMessage {
   ParseMessage(String statement, {String statementName = ''}) {
-    this.statement = new UTF8BackedString(statement);
-    this.statementName = new UTF8BackedString(statementName);
+    this.statement = UTF8BackedString(statement);
+    this.statementName = UTF8BackedString(statementName);
   }
 
   UTF8BackedString statementName;
@@ -167,7 +167,7 @@ class ParseMessage extends ClientMessage {
 
 class DescribeMessage extends ClientMessage {
   DescribeMessage({String statementName = ''}) {
-    this.statementName = new UTF8BackedString(statementName);
+    this.statementName = UTF8BackedString(statementName);
   }
 
   UTF8BackedString statementName;
@@ -189,7 +189,7 @@ class DescribeMessage extends ClientMessage {
 class BindMessage extends ClientMessage {
   BindMessage(this.parameters, {String statementName = ''}) {
     typeSpecCount = parameters.where((p) => p.isBinary).length;
-    this.statementName = new UTF8BackedString(statementName);
+    this.statementName = UTF8BackedString(statementName);
   }
 
   List<ParameterValue> parameters;

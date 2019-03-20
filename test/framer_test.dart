@@ -10,7 +10,7 @@ import 'package:postgres/src/server_messages.dart';
 void main() {
   MessageFramer framer;
   setUp(() {
-    framer = new MessageFramer();
+    framer = MessageFramer();
   });
 
   tearDown(() {
@@ -24,9 +24,9 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3])
+        ..bytes = Uint8List.fromList([1, 2, 3])
     ]);
   });
 
@@ -38,12 +38,12 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3]),
-      new UnknownMessage()
+        ..bytes = Uint8List.fromList([1, 2, 3]),
+      UnknownMessage()
         ..code = 2
-        ..bytes = new Uint8List.fromList([1, 2, 3, 4])
+        ..bytes = Uint8List.fromList([1, 2, 3, 4])
     ]);
   });
 
@@ -57,9 +57,9 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3])
+        ..bytes = Uint8List.fromList([1, 2, 3])
     ]);
   });
 
@@ -78,9 +78,9 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3])
+        ..bytes = Uint8List.fromList([1, 2, 3])
     ]);
   });
 
@@ -97,12 +97,12 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3]),
-      new UnknownMessage()
+        ..bytes = Uint8List.fromList([1, 2, 3]),
+      UnknownMessage()
         ..code = 2
-        ..bytes = new Uint8List.fromList([2, 2, 3]),
+        ..bytes = Uint8List.fromList([2, 2, 3]),
     ]);
   });
 
@@ -119,12 +119,12 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3]),
-      new UnknownMessage()
+        ..bytes = Uint8List.fromList([1, 2, 3]),
+      UnknownMessage()
         ..code = 2
-        ..bytes = new Uint8List.fromList([2, 2, 3]),
+        ..bytes = Uint8List.fromList([2, 2, 3]),
     ]);
   });
 
@@ -138,9 +138,9 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3, 4, 5, 6, 7])
+        ..bytes = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7])
     ]);
   });
 
@@ -158,12 +158,12 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 0
-        ..bytes = new Uint8List.fromList([1, 2]),
-      new UnknownMessage()
+        ..bytes = Uint8List.fromList([1, 2]),
+      UnknownMessage()
         ..code = 1
-        ..bytes = new Uint8List.fromList([1, 2, 3, 4, 5, 6, 7])
+        ..bytes = Uint8List.fromList([1, 2, 3, 4, 5, 6, 7])
     ]);
   });
 
@@ -187,13 +187,13 @@ void main() {
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
     expect(messages, [
-      new UnknownMessage()
+      UnknownMessage()
         ..code = 0
-        ..bytes = new Uint8List.fromList([1, 2]),
-      new UnknownMessage()
+        ..bytes = Uint8List.fromList([1, 2]),
+      UnknownMessage()
         ..code = 1
         ..bytes =
-            new Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+            Uint8List.fromList([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13])
     ]);
   });
 
@@ -201,14 +201,14 @@ void main() {
     framer.addBytes(bufferWithMessages([messageWithBytes([], 10)]));
 
     final messages = framer.messageQueue.map((f) => f.message).toList();
-    expect(messages, [new UnknownMessage()..code = 10]);
+    expect(messages, [UnknownMessage()..code = 10]);
   });
 }
 
 List<int> messageWithBytes(List<int> bytes, int messageID) {
-  final buffer = new BytesBuilder();
+  final buffer = BytesBuilder();
   buffer.addByte(messageID);
-  final lengthBuffer = new ByteData(4);
+  final lengthBuffer = ByteData(4);
   lengthBuffer.setUint32(0, bytes.length + 4);
   buffer.add(lengthBuffer.buffer.asUint8List());
   buffer.add(bytes);
@@ -222,7 +222,7 @@ List<Uint8List> fragmentedMessageBuffer(List<int> message, int pivotPoint) {
 }
 
 Uint8List bufferWithMessages(List<List<int>> messages) {
-  return new Uint8List.fromList(messages.expand((l) => l).toList());
+  return Uint8List.fromList(messages.expand((l) => l).toList());
 }
 
 flush(MessageFramer framer) {
@@ -233,8 +233,8 @@ flush(MessageFramer framer) {
 
   final messages = framer.messageQueue.map((f) => f.message).toList();
   expect(messages, [
-    new UnknownMessage()
+    UnknownMessage()
       ..code = 1
-      ..bytes = new Uint8List.fromList([1, 2, 3])
+      ..bytes = Uint8List.fromList([1, 2, 3])
   ]);
 }

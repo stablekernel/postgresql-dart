@@ -37,7 +37,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       return encodeJSON(value);
     }
 
-    throw new PostgreSQLException("Could not infer type of value '$value'.");
+    throw PostgreSQLException("Could not infer type of value '$value'.");
   }
 
   String encodeString(String text, bool escapeStrings) {
@@ -50,7 +50,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
 
     int quoteCount = 0;
     int backslashCount = 0;
-    final it = new RuneIterator(text);
+    final it = RuneIterator(text);
     while (it.moveNext()) {
       if (it.current == backslashCodeUnit) {
         backslashCount++;
@@ -59,7 +59,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       }
     }
 
-    final buf = new StringBuffer();
+    final buf = StringBuffer();
 
     if (backslashCount > 0) {
       buf.write(" E");

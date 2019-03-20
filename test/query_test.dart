@@ -4,11 +4,11 @@ import 'package:postgres/src/types.dart';
 
 void main() {
   group("Successful queries", () {
-    var connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    var connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
       await connection.execute("CREATE TEMPORARY TABLE t "
@@ -129,9 +129,9 @@ void main() {
             "t": "foobar",
             "f": 5.0,
             "d": 6.0,
-            "dt": new DateTime.utc(2000),
-            "ts": new DateTime.utc(2000, 2),
-            "tsz": new DateTime.utc(2000, 3),
+            "dt": DateTime.utc(2000),
+            "ts": DateTime.utc(2000, 2),
+            "tsz": DateTime.utc(2000, 3),
             "j": {"a": "b"},
             "u": "01234567-89ab-cdef-0123-0123456789ab"
           });
@@ -146,9 +146,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3),
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3),
         {"a": "b"},
         "01234567-89ab-cdef-0123-0123456789ab"
       ];
@@ -182,9 +182,9 @@ void main() {
             "t": "foobar",
             "f": 5.0,
             "d": 6.0,
-            "dt": new DateTime.utc(2000),
-            "ts": new DateTime.utc(2000, 2),
-            "tsz": new DateTime.utc(2000, 3),
+            "dt": DateTime.utc(2000),
+            "ts": DateTime.utc(2000, 2),
+            "tsz": DateTime.utc(2000, 3),
             "j": {"key": "value"},
             "u": "01234567-89ab-cdef-0123-0123456789ab"
           });
@@ -199,9 +199,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3),
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3),
         {"key": "value"},
         "01234567-89ab-cdef-0123-0123456789ab"
       ];
@@ -233,9 +233,9 @@ void main() {
             "t": "foobar",
             "f": 5.0,
             "d": 6.0,
-            "dt": new DateTime.utc(2000),
-            "ts": new DateTime.utc(2000, 2),
-            "tsz": new DateTime.utc(2000, 3),
+            "dt": DateTime.utc(2000),
+            "ts": DateTime.utc(2000, 2),
+            "tsz": DateTime.utc(2000, 3),
           });
 
       final expectedRow = [
@@ -248,9 +248,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3)
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3)
       ];
       expect(result, [expectedRow]);
       result = await connection
@@ -324,11 +324,11 @@ void main() {
   });
 
   group("Unsuccesful queries", () {
-    var connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    var connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
       await connection.execute(

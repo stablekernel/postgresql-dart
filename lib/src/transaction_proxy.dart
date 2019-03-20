@@ -8,18 +8,18 @@ class _TransactionProxy extends Object
     implements PostgreSQLExecutionContext {
   _TransactionProxy(
       this._connection, this.executionBlock, this.commitTimeoutInSeconds) {
-    beginQuery = new Query<int>("BEGIN", {}, _connection, this)
+    beginQuery = Query<int>("BEGIN", {}, _connection, this)
       ..onlyReturnAffectedRowCount = true;
 
     beginQuery.future.then(startTransaction).catchError((err, StackTrace st) {
-      new Future(() {
+      Future(() {
         completer.completeError(err, st);
       });
     });
   }
 
   Query<dynamic> beginQuery;
-  Completer completer = new Completer();
+  Completer completer = Completer();
 
   Future get future => completer.future;
 
@@ -36,7 +36,7 @@ class _TransactionProxy extends Object
 
   @override
   void cancelTransaction({String reason}) {
-    throw new _TransactionRollbackException(reason);
+    throw _TransactionRollbackException(reason);
   }
 
   Future startTransaction(dynamic _) async {
@@ -46,7 +46,7 @@ class _TransactionProxy extends Object
 
       // Place another event in the queue so that any non-awaited futures
       // in the executionBlock are given a chance to run
-      await new Future(() => null);
+      await Future(() => null);
     } on _TransactionRollbackException catch (rollback) {
       await _cancelAndRollback(rollback);
 
@@ -82,25 +82,25 @@ class _TransactionProxy extends Object
       q.future.catchError((_) {});
     });
 
-    final err = new PostgreSQLException("Query failed prior to execution. "
+    final err = PostgreSQLException("Query failed prior to execution. "
         "This query's transaction encountered an error earlier in the transaction "
         "that prevented this query from executing.");
     _queue.cancel(err);
 
-    final rollback = new Query<int>("ROLLBACK", {}, _connection, _transaction)
+    final rollback = Query<int>("ROLLBACK", {}, _connection, _transaction)
       ..onlyReturnAffectedRowCount = true;
     _queue.addEvenIfCancelled(rollback);
 
     _connection._transitionToState(_connection._connectionState.awake());
 
     try {
-      await rollback.future.timeout(new Duration(seconds: 30));
+      await rollback.future.timeout(Duration(seconds: 30));
     } finally {
       _queue.remove(rollback);
     }
 
     if (object is _TransactionRollbackException) {
-      completer.complete(new PostgreSQLRollback._(object.reason));
+      completer.complete(PostgreSQLRollback._(object.reason));
     } else {
       completer.completeError(object, trace);
     }

@@ -10,7 +10,7 @@ void main() {
     PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await conn.open();
       await conn.execute("CREATE TEMPORARY TABLE t (id INT UNIQUE)");
@@ -55,7 +55,7 @@ void main() {
     test("Query during transaction must wait until transaction is finished",
         () async {
       final orderEnsurer = [];
-      final nextCompleter = new Completer.sync();
+      final nextCompleter = Completer.sync();
       final outResult = conn.transaction((c) async {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
@@ -148,7 +148,7 @@ void main() {
     test("Intentional rollback from outside of a transaction has no impact",
         () async {
       final orderEnsurer = [];
-      final nextCompleter = new Completer.sync();
+      final nextCompleter = Completer.sync();
       final outResult = conn.transaction((c) async {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
@@ -298,7 +298,7 @@ void main() {
     PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await conn.open();
       await conn.execute("CREATE TEMPORARY TABLE t (id INT UNIQUE)");
@@ -397,7 +397,7 @@ void main() {
     PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await conn.open();
       await conn.execute("CREATE TEMPORARY TABLE t (id INT UNIQUE)");
@@ -535,7 +535,7 @@ void main() {
     PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await conn.open();
       await conn.execute("CREATE TEMPORARY TABLE t (id INT UNIQUE)");

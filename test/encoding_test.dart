@@ -14,7 +14,7 @@ PostgreSQLConnection conn;
 void main() {
   group("Binary encoders", () {
     setUp(() async {
-      conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      conn = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await conn.open();
     });
@@ -144,12 +144,9 @@ void main() {
     });
 
     test("date", () async {
-      await expectInverse(
-          new DateTime.utc(1920, 10, 1), PostgreSQLDataType.date);
-      await expectInverse(
-          new DateTime.utc(2120, 10, 5), PostgreSQLDataType.date);
-      await expectInverse(
-          new DateTime.utc(2016, 10, 1), PostgreSQLDataType.date);
+      await expectInverse(DateTime.utc(1920, 10, 1), PostgreSQLDataType.date);
+      await expectInverse(DateTime.utc(2120, 10, 5), PostgreSQLDataType.date);
+      await expectInverse(DateTime.utc(2016, 10, 1), PostgreSQLDataType.date);
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:date)",
             substitutionValues: {"v": "not-date"});
@@ -160,9 +157,9 @@ void main() {
     });
 
     test("timestamp", () async {
-      await expectInverse(new DateTime.utc(1920, 10, 1),
+      await expectInverse(DateTime.utc(1920, 10, 1),
           PostgreSQLDataType.timestampWithoutTimezone);
-      await expectInverse(new DateTime.utc(2120, 10, 5),
+      await expectInverse(DateTime.utc(2120, 10, 5),
           PostgreSQLDataType.timestampWithoutTimezone);
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:timestamp)",
@@ -174,10 +171,10 @@ void main() {
     });
 
     test("timestamptz", () async {
-      await expectInverse(new DateTime.utc(1920, 10, 1),
-          PostgreSQLDataType.timestampWithTimezone);
-      await expectInverse(new DateTime.utc(2120, 10, 5),
-          PostgreSQLDataType.timestampWithTimezone);
+      await expectInverse(
+          DateTime.utc(1920, 10, 1), PostgreSQLDataType.timestampWithTimezone);
+      await expectInverse(
+          DateTime.utc(2120, 10, 5), PostgreSQLDataType.timestampWithTimezone);
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:timestamptz)",
             substitutionValues: {"v": "not-timestamptz"});
@@ -199,7 +196,7 @@ void main() {
 
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:jsonb)",
-            substitutionValues: {"v": new DateTime.now()});
+            substitutionValues: {"v": DateTime.now()});
         fail('unreachable');
       } on JsonUnsupportedObjectError catch (_) {}
     });
@@ -211,7 +208,7 @@ void main() {
 
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:bytea)",
-            substitutionValues: {"v": new DateTime.now()});
+            substitutionValues: {"v": DateTime.now()});
         fail('unreachable');
       } on FormatException catch (e) {
         expect(e.toString(), contains("Expected: List<int>"));
@@ -226,7 +223,7 @@ void main() {
 
       try {
         await conn.query("INSERT INTO t (v) VALUES (@v:uuid)",
-            substitutionValues: {"v": new DateTime.now()});
+            substitutionValues: {"v": DateTime.now()});
         fail('unreachable');
       } on FormatException catch (e) {
         expect(e.toString(), contains("Expected: String"));
@@ -236,7 +233,7 @@ void main() {
 
   group("Text encoders", () {
     test("Escape strings", () {
-      final encoder = new PostgresTextEncoder(true);
+      final encoder = PostgresTextEncoder(true);
       //                                                       '   b   o    b   '
       expect(
           utf8.encode(encoder.convert('bob')), equals([39, 98, 111, 98, 39]));
@@ -275,29 +272,29 @@ void main() {
 
     test("Encode DateTime", () {
       // Get users current timezone
-      final tz = new DateTime(2001, 2, 3).timeZoneOffset;
+      final tz = DateTime(2001, 2, 3).timeZoneOffset;
       final tzOffsetDelimiter = "${tz.isNegative ? '-' : '+'}"
           "${tz.abs().inHours.toString().padLeft(2, '0')}"
           ":${(tz.inSeconds % 60).toString().padLeft(2, '0')}";
 
       final pairs = {
         "2001-02-03T00:00:00.000$tzOffsetDelimiter":
-            new DateTime(2001, DateTime.february, 3),
+            DateTime(2001, DateTime.february, 3),
         "2001-02-03T04:05:06.000$tzOffsetDelimiter":
-            new DateTime(2001, DateTime.february, 3, 4, 5, 6, 0),
+            DateTime(2001, DateTime.february, 3, 4, 5, 6, 0),
         "2001-02-03T04:05:06.999$tzOffsetDelimiter":
-            new DateTime(2001, DateTime.february, 3, 4, 5, 6, 999),
+            DateTime(2001, DateTime.february, 3, 4, 5, 6, 999),
         "0010-02-03T04:05:06.123$tzOffsetDelimiter BC":
-            new DateTime(-10, DateTime.february, 3, 4, 5, 6, 123),
+            DateTime(-10, DateTime.february, 3, 4, 5, 6, 123),
         "0010-02-03T04:05:06.000$tzOffsetDelimiter BC":
-            new DateTime(-10, DateTime.february, 3, 4, 5, 6, 0),
+            DateTime(-10, DateTime.february, 3, 4, 5, 6, 0),
         "012345-02-03T04:05:06.000$tzOffsetDelimiter BC":
-            new DateTime(-12345, DateTime.february, 3, 4, 5, 6, 0),
+            DateTime(-12345, DateTime.february, 3, 4, 5, 6, 0),
         "012345-02-03T04:05:06.000$tzOffsetDelimiter":
-            new DateTime(12345, DateTime.february, 3, 4, 5, 6, 0)
+            DateTime(12345, DateTime.february, 3, 4, 5, 6, 0)
       };
 
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
       pairs.forEach((k, v) {
         expect(encoder.convert(v), "'$k'");
       });
@@ -314,14 +311,14 @@ void main() {
         "0.0": 0.0
       };
 
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
       pairs.forEach((k, v) {
         expect(encoder.convert(v), "$k");
       });
     });
 
     test("Encode Int", () {
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
 
       expect(encoder.convert(1), "1");
       expect(encoder.convert(1234324323), "1234324323");
@@ -329,14 +326,14 @@ void main() {
     });
 
     test("Encode Bool", () {
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
 
       expect(encoder.convert(true), "TRUE");
       expect(encoder.convert(false), "FALSE");
     });
 
     test("Encode JSONB", () {
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
 
       expect(encoder.convert({"a": "b"}), "{\"a\":\"b\"}");
       expect(encoder.convert({"a": true}), "{\"a\":true}");
@@ -344,7 +341,7 @@ void main() {
     });
 
     test("Attempt to infer unknown type throws exception", () {
-      final encoder = new PostgresTextEncoder(false);
+      final encoder = PostgresTextEncoder(false);
       try {
         encoder.convert([]);
         fail('unreachable');
@@ -356,8 +353,8 @@ void main() {
 
   test("UTF8String caches string regardless of which method is called first",
       () {
-    final u = new UTF8BackedString("abcd");
-    final v = new UTF8BackedString("abcd");
+    final u = UTF8BackedString("abcd");
+    final v = UTF8BackedString("abcd");
 
     u.utf8Length;
     v.utf8Bytes;
@@ -367,7 +364,7 @@ void main() {
   });
 
   test("Invalid UUID encoding", () {
-    final converter = new PostgresBinaryEncoder(PostgreSQLDataType.uuid);
+    final converter = PostgresBinaryEncoder(PostgreSQLDataType.uuid);
     try {
       converter.convert("z0000000-0000-0000-0000-000000000000");
       fail('unreachable');
@@ -407,7 +404,7 @@ Future expectInverse(dynamic value, PostgreSQLDataType dataType) async {
       substitutionValues: {"v": value});
   expect(result.first.first, equals(value));
 
-  final encoder = new PostgresBinaryEncoder(dataType);
+  final encoder = PostgresBinaryEncoder(dataType);
   final encodedValue = encoder.convert(value);
 
   if (dataType == PostgreSQLDataType.serial) {
@@ -422,7 +419,7 @@ Future expectInverse(dynamic value, PostgreSQLDataType dataType) async {
     }
   });
 
-  final decoder = new PostgresBinaryDecoder(code);
+  final decoder = PostgresBinaryDecoder(code);
   final decodedValue = decoder.convert(encodedValue);
 
   expect(decodedValue, value);

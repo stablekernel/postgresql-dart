@@ -44,12 +44,12 @@ class PostgreSQLConnection extends Object
       this.queryTimeoutInSeconds = 30,
       this.timeZone = 'UTC',
       this.useSSL = false}) {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = _PostgreSQLConnectionStateClosed();
     _connectionState.connection = this;
   }
 
   final StreamController<Notification> _notifications =
-      new StreamController<Notification>.broadcast();
+      StreamController<Notification>.broadcast();
 
   /// Hostname of database this connection refers to.
   final String host;
@@ -92,7 +92,7 @@ class PostgreSQLConnection extends Object
   /// Whether or not this connection is open or not.
   ///
   /// This is `true` when this instance is first created and after it has been closed or encountered an unrecoverable error.
-  /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a new instance
+  /// If a connection has already been opened and this value is now true, the connection cannot be reopened and a instance
   /// must be created.
   bool get isClosed => _connectionState is _PostgreSQLConnectionStateClosed;
 
@@ -102,9 +102,9 @@ class PostgreSQLConnection extends Object
   /// Prior to connection, it is the empty map.
   final Map<String, String> settings = {};
 
-  final _cache = new QueryCache();
+  final _cache = QueryCache();
   Socket _socket;
-  MessageFramer _framer = new MessageFramer();
+  MessageFramer _framer = MessageFramer();
   int _processID;
   // ignore: unused_field
   int _secretKey;
@@ -129,30 +129,30 @@ class PostgreSQLConnection extends Object
   /// opened and this method is called, an exception will be thrown.
   Future open() async {
     if (_hasConnectedPreviously) {
-      throw new PostgreSQLException(
-          "Attempting to reopen a closed connection. Create a new instance instead.");
+      throw PostgreSQLException(
+          "Attempting to reopen a closed connection. Create a instance instead.");
     }
 
     try {
       _hasConnectedPreviously = true;
       _socket = await Socket.connect(host, port)
-          .timeout(new Duration(seconds: timeoutInSeconds));
+          .timeout(Duration(seconds: timeoutInSeconds));
 
-      _framer = new MessageFramer();
+      _framer = MessageFramer();
       if (useSSL) {
         _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
       }
 
-      final connectionComplete = new Completer();
+      final connectionComplete = Completer();
       _socket.listen(_readData, onError: _close, onDone: _close);
 
       _transitionToState(
-          new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
+          _PostgreSQLConnectionStateSocketConnected(connectionComplete));
 
       await connectionComplete.future
-          .timeout(new Duration(seconds: timeoutInSeconds));
+          .timeout(Duration(seconds: timeoutInSeconds));
     } on TimeoutException catch (e, st) {
-      final err = new PostgreSQLException(
+      final err = PostgreSQLException(
           "Failed to connect to database $host:$port/$databaseName failed to connect.");
       await _close(err, st);
       rethrow;
@@ -199,12 +199,11 @@ class PostgreSQLConnection extends Object
   Future transaction(Future queryBlock(PostgreSQLExecutionContext connection),
       {int commitTimeoutInSeconds}) async {
     if (isClosed) {
-      throw new PostgreSQLException(
+      throw PostgreSQLException(
           "Attempting to execute query, but connection is not open.");
     }
 
-    final proxy =
-        new _TransactionProxy(this, queryBlock, commitTimeoutInSeconds);
+    final proxy = _TransactionProxy(this, queryBlock, commitTimeoutInSeconds);
 
     await _enqueue(proxy.beginQuery);
 
@@ -233,7 +232,7 @@ class PostgreSQLConnection extends Object
   }
 
   Future _close([dynamic error, StackTrace trace]) async {
-    _connectionState = new _PostgreSQLConnectionStateClosed();
+    _connectionState = _PostgreSQLConnectionStateClosed();
 
     await _socket?.close();
     await _notifications?.close();
@@ -255,7 +254,7 @@ class PostgreSQLConnection extends Object
           _transitionToState(_connectionState.onErrorResponse(msg));
         } else if (msg is NotificationResponseMessage) {
           _notifications
-              .add(new Notification(msg.processID, msg.channel, msg.payload));
+              .add(Notification(msg.processID, msg.channel, msg.payload));
         } else {
           _transitionToState(_connectionState.onMessage(msg));
         }
@@ -267,37 +266,37 @@ class PostgreSQLConnection extends Object
 
   Future<Socket> _upgradeSocketToSSL(Socket originalSocket,
       {int timeout = 30}) {
-    final sslCompleter = new Completer<int>();
+    final sslCompleter = Completer<int>();
 
     originalSocket.listen((data) {
       if (data.length != 1) {
-        sslCompleter.completeError(new PostgreSQLException(
+        sslCompleter.completeError(PostgreSQLException(
             "Could not initalize SSL connection, received unknown byte stream."));
         return;
       }
 
       sslCompleter.complete(data.first);
     },
-        onDone: () => sslCompleter.completeError(new PostgreSQLException(
+        onDone: () => sslCompleter.completeError(PostgreSQLException(
             "Could not initialize SSL connection, connection closed during handshake.")),
         onError: sslCompleter.completeError);
 
-    final byteBuffer = new ByteData(8);
+    final byteBuffer = ByteData(8);
     byteBuffer.setUint32(0, 8);
     byteBuffer.setUint32(4, 80877103);
     originalSocket.add(byteBuffer.buffer.asUint8List());
 
     return sslCompleter.future
-        .timeout(new Duration(seconds: timeout))
+        .timeout(Duration(seconds: timeout))
         .then((responseByte) {
       if (responseByte != 83) {
-        throw new PostgreSQLException(
+        throw PostgreSQLException(
             "The database server is not accepting SSL connections.");
       }
 
       return SecureSocket.secure(originalSocket,
               onBadCertificate: (certificate) => true)
-          .timeout(new Duration(seconds: timeout));
+          .timeout(Duration(seconds: timeout));
     });
   }
 }
@@ -328,7 +327,7 @@ class Notification {
 abstract class _PostgreSQLExecutionContextMixin
     implements PostgreSQLExecutionContext {
   final _tableOIDNameMap = <int, String>{};
-  final _queue = new QueryQueue();
+  final _queue = QueryQueue();
 
   PostgreSQLConnection get _connection;
 
@@ -344,11 +343,11 @@ abstract class _PostgreSQLExecutionContextMixin
       int timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
-      throw new PostgreSQLException(
+      throw PostgreSQLException(
           "Attempting to execute query, but connection is not open.");
     }
 
-    final query = new Query<List<List<dynamic>>>(
+    final query = Query<List<List<dynamic>>>(
         fmtString, substitutionValues, _connection, _transaction);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
@@ -365,11 +364,11 @@ abstract class _PostgreSQLExecutionContextMixin
       int timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
-      throw new PostgreSQLException(
+      throw PostgreSQLException(
           "Attempting to execute query, but connection is not open.");
     }
 
-    final query = new Query<List<List<dynamic>>>(
+    final query = Query<List<List<dynamic>>>(
         fmtString, substitutionValues, _connection, _transaction);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
@@ -385,12 +384,12 @@ abstract class _PostgreSQLExecutionContextMixin
       {Map<String, dynamic> substitutionValues, int timeoutInSeconds}) {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
-      throw new PostgreSQLException(
+      throw PostgreSQLException(
           "Attempting to execute query, but connection is not open.");
     }
 
     final query =
-        new Query<int>(fmtString, substitutionValues, _connection, _transaction)
+        Query<int>(fmtString, substitutionValues, _connection, _transaction)
           ..onlyReturnAffectedRowCount = true;
 
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
@@ -404,7 +403,7 @@ abstract class _PostgreSQLExecutionContextMixin
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
-    final tableOIDs = new Set<int>.from(columns.map((f) => f.tableID));
+    final tableOIDs = Set<int>.from(columns.map((f) => f.tableID));
     final List<int> unresolvedTableOIDs = tableOIDs
         .where((oid) =>
             oid != null && oid > 0 && !_tableOIDNameMap.containsKey(oid))
@@ -421,10 +420,8 @@ abstract class _PostgreSQLExecutionContextMixin
 
     final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
     return rows.map((row) {
-      final rowMap = new Map<String, Map<String, dynamic>>.fromIterable(
-          tableNames,
-          key: (name) => name as String,
-          value: (_) => <String, dynamic>{});
+      final rowMap = Map<String, Map<String, dynamic>>.fromIterable(tableNames,
+          key: (name) => name as String, value: (_) => <String, dynamic>{});
 
       final iterator = columns.iterator;
       row.forEach((column) {
@@ -457,7 +454,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
       try {
         final result =
-            await query.future.timeout(new Duration(seconds: timeoutInSeconds));
+            await query.future.timeout(Duration(seconds: timeoutInSeconds));
         _connection._cache.add(query);
         _queue.remove(query);
         return result;
@@ -471,7 +468,7 @@ abstract class _PostgreSQLExecutionContextMixin
       // the caller behaves correctly in this condition. otherwise,
       // the caller would complete synchronously. This future
       // will always complete as a cancellation error.
-      return new Future(() async => query.future);
+      return Future(() async => query.future);
     }
   }
 

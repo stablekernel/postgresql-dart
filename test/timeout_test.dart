@@ -8,7 +8,7 @@ void main() {
   PostgreSQLConnection conn;
 
   setUp(() async {
-    conn = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    conn = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     await conn.open();
     await conn.execute("CREATE TEMPORARY TABLE t (id INT UNIQUE)");
@@ -79,13 +79,13 @@ void main() {
 
   test("Query that succeeds does not timeout", () async {
     await conn.query("SELECT 1", timeoutInSeconds: 1);
-    expect(new Future.delayed(new Duration(seconds: 2)), completes);
+    expect(Future.delayed(Duration(seconds: 2)), completes);
   });
 
   test("Query that fails does not timeout", () async {
     await conn
         .query("INSERT INTO t (id) VALUES ('foo')", timeoutInSeconds: 1)
         .catchError((_) => null);
-    expect(new Future.delayed(new Duration(seconds: 2)), completes);
+    expect(Future.delayed(Duration(seconds: 2)), completes);
   });
 }

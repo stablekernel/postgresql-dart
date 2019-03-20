@@ -5,11 +5,11 @@ import 'package:test/test.dart';
 
 void main() {
   group("Successful notifications", () {
-    var connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    var connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
     });
@@ -25,7 +25,7 @@ void main() {
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel, '$payload';");
 
-      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, payload);
     });
@@ -36,7 +36,7 @@ void main() {
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel;");
 
-      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(Duration(milliseconds: 200));
       expect(msg.channel, channel);
       expect(msg.payload, '');
     });
@@ -48,7 +48,7 @@ void main() {
       await connection.execute("LISTEN $channel;"
           "NOTIFY $channel, '$payload';");
 
-      final msg = await futureMsg.timeout(new Duration(milliseconds: 200));
+      final msg = await futureMsg.timeout(Duration(milliseconds: 200));
 
       expect(msg.channel, channel);
       expect(msg.payload, payload);
@@ -60,7 +60,7 @@ void main() {
       try {
         await connection.execute("NOTIFY $channel, '$payload';");
 
-        await futureMsg.timeout(new Duration(milliseconds: 200));
+        await futureMsg.timeout(Duration(milliseconds: 200));
 
         fail('There should be no notification');
       } on TimeoutException catch (_) {}
@@ -69,7 +69,7 @@ void main() {
     test("Notification many channel", () async {
       final countResponse = <String, int>{};
       int totalCountResponse = 0;
-      final finishExecute = new Completer();
+      final finishExecute = Completer();
       connection.notifications.listen((msg) {
         final count = countResponse[msg.channel];
         countResponse[msg.channel] = (count ?? 0) + 1;
@@ -99,10 +99,10 @@ void main() {
       await connection.execute("UNLISTEN $channel2;");
       await notifier();
 
-      await finishExecute.future.timeout(new Duration(milliseconds: 200));
+      await finishExecute.future.timeout(Duration(milliseconds: 200));
 
       expect(countResponse[channel1], 10);
       expect(countResponse[channel2], 10);
-    }, timeout: new Timeout(new Duration(seconds: 5)));
+    }, timeout: Timeout(Duration(seconds: 5)));
   });
 }

@@ -5,7 +5,7 @@ void main() {
   PostgreSQLConnection connection;
 
   setUp(() async {
-    connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     await connection.open();
 

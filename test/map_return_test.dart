@@ -6,7 +6,7 @@ void main() {
   InterceptingConnection connection;
 
   setUp(() async {
-    connection = new InterceptingConnection("localhost", 5432, "dart_test",
+    connection = InterceptingConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     await connection.open();
 
@@ -103,7 +103,7 @@ void main() {
   });
 
   test("Table names get cached", () async {
-    final regex = new RegExp(
+    final regex = RegExp(
         "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN \\(([0-9]*)\\) ORDER BY oid ASC");
     final oids = <String>[];
 

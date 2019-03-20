@@ -54,32 +54,31 @@ class PostgreSQLFormat {
 
   static String substitute(String fmtString, Map<String, dynamic> values,
       {SQLReplaceIdentifierFunction replace}) {
-    final converter = new PostgresTextEncoder(true);
+    final converter = PostgresTextEncoder(true);
     values ??= {};
     replace ??= (spec, index) => converter.convert(values[spec.name]);
 
     final items = <PostgreSQLFormatToken>[];
     PostgreSQLFormatToken currentPtr;
-    final iterator = new RuneIterator(fmtString);
+    final iterator = RuneIterator(fmtString);
 
     iterator.moveNext();
     while (iterator.current != null) {
       if (currentPtr == null) {
         if (iterator.current == _atSignCodeUnit) {
           currentPtr =
-              new PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
+              PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
           currentPtr.buffer.writeCharCode(iterator.current);
           items.add(currentPtr);
         } else {
-          currentPtr =
-              new PostgreSQLFormatToken(PostgreSQLFormatTokenType.text);
+          currentPtr = PostgreSQLFormatToken(PostgreSQLFormatTokenType.text);
           currentPtr.buffer.writeCharCode(iterator.current);
           items.add(currentPtr);
         }
       } else if (currentPtr.type == PostgreSQLFormatTokenType.text) {
         if (iterator.current == _atSignCodeUnit) {
           currentPtr =
-              new PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
+              PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
           currentPtr.buffer.writeCharCode(iterator.current);
           items.add(currentPtr);
         } else {
@@ -93,7 +92,7 @@ class PostgreSQLFormat {
             currentPtr.type = PostgreSQLFormatTokenType.text;
           } else {
             currentPtr =
-                new PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
+                PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
             currentPtr.buffer.writeCharCode(iterator.current);
             items.add(currentPtr);
           }
@@ -101,8 +100,7 @@ class PostgreSQLFormat {
         } else if (_isIdentifier(iterator.current)) {
           currentPtr.buffer.writeCharCode(iterator.current);
         } else {
-          currentPtr =
-              new PostgreSQLFormatToken(PostgreSQLFormatTokenType.text);
+          currentPtr = PostgreSQLFormatToken(PostgreSQLFormatTokenType.text);
           currentPtr.buffer.writeCharCode(iterator.current);
           items.add(currentPtr);
         }
@@ -118,10 +116,10 @@ class PostgreSQLFormat {
       } else if (t.buffer.length == 1 && t.buffer.toString() == '@') {
         return t.buffer;
       } else {
-        final identifier = new PostgreSQLFormatIdentifier(t.buffer.toString());
+        final identifier = PostgreSQLFormatIdentifier(t.buffer.toString());
 
         if (!values.containsKey(identifier.name)) {
-          throw new FormatException(
+          throw FormatException(
               "Format string specified identifier with name ${identifier.name}, but key was not present in values. Format string: $fmtString");
         }
 

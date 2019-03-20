@@ -21,43 +21,43 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
       case PostgreSQLDataType.boolean:
         {
           if (value is bool) {
-            final bd = new ByteData(1);
+            final bd = ByteData(1);
             bd.setUint8(0, value ? 1 : 0);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: bool Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.bigSerial:
       case PostgreSQLDataType.bigInteger:
         {
           if (value is int) {
-            final bd = new ByteData(8);
+            final bd = ByteData(8);
             bd.setInt64(0, value);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: int Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.serial:
       case PostgreSQLDataType.integer:
         {
           if (value is int) {
-            final bd = new ByteData(4);
+            final bd = ByteData(4);
             bd.setInt32(0, value);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: int Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.smallInteger:
         {
           if (value is int) {
-            final bd = new ByteData(2);
+            final bd = ByteData(2);
             bd.setInt16(0, value);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: int Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.name:
@@ -66,73 +66,68 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
           if (value is String) {
             return castBytes(utf8.encode(value));
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: String Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.real:
         {
           if (value is double) {
-            final bd = new ByteData(4);
+            final bd = ByteData(4);
             bd.setFloat32(0, value);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: double Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.double:
         {
           if (value is double) {
-            final bd = new ByteData(8);
+            final bd = ByteData(8);
             bd.setFloat64(0, value);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: double Got: ${value.runtimeType}');
         }
       case PostgreSQLDataType.date:
         {
           if (value is DateTime) {
-            final bd = new ByteData(4);
-            bd.setInt32(
-                0, value.toUtc().difference(new DateTime.utc(2000)).inDays);
+            final bd = ByteData(4);
+            bd.setInt32(0, value.toUtc().difference(DateTime.utc(2000)).inDays);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: DateTime Got: ${value.runtimeType}');
         }
 
       case PostgreSQLDataType.timestampWithoutTimezone:
         {
           if (value is DateTime) {
-            final bd = new ByteData(8);
-            final diff = value.toUtc().difference(new DateTime.utc(2000));
+            final bd = ByteData(8);
+            final diff = value.toUtc().difference(DateTime.utc(2000));
             bd.setInt64(0, diff.inMicroseconds);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: DateTime Got: ${value.runtimeType}');
         }
 
       case PostgreSQLDataType.timestampWithTimezone:
         {
           if (value is DateTime) {
-            final bd = new ByteData(8);
+            final bd = ByteData(8);
             bd.setInt64(
-                0,
-                value
-                    .toUtc()
-                    .difference(new DateTime.utc(2000))
-                    .inMicroseconds);
+                0, value.toUtc().difference(DateTime.utc(2000)).inMicroseconds);
             return bd.buffer.asUint8List();
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: DateTime Got: ${value.runtimeType}');
         }
 
       case PostgreSQLDataType.json:
         {
           final jsonBytes = utf8.encode(json.encode(value));
-          final outBuffer = new Uint8List(jsonBytes.length + 1);
+          final outBuffer = Uint8List(jsonBytes.length + 1);
           outBuffer[0] = 1;
           for (var i = 0; i < jsonBytes.length; i++) {
             outBuffer[i + 1] = jsonBytes[i];
@@ -146,14 +141,14 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
           if (value is List<int>) {
             return castBytes(value);
           }
-          throw new FormatException(
+          throw FormatException(
               'Invalid type for parameter value. Expected: List<int> Got: ${value.runtimeType}');
         }
 
       case PostgreSQLDataType.uuid:
         {
           if (value is! String) {
-            throw new FormatException(
+            throw FormatException(
                 "Invalid type for parameter value. Expected: String Got: ${value.runtimeType}");
           }
 
@@ -164,7 +159,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
               .where((c) => c != dashUnit)
               .toList();
           if (hexBytes.length != 32) {
-            throw new FormatException(
+            throw FormatException(
                 "Invalid UUID string. There must be exactly 32 hexadecimal (0-9 and a-f) characters and any number of '-' characters.");
           }
 
@@ -175,11 +170,11 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
               return charCode - 87;
             }
 
-            throw new FormatException(
+            throw FormatException(
                 "Invalid UUID string. Contains non-hexadecimal character (0-9 and a-f).");
           };
 
-          final outBuffer = new Uint8List(16);
+          final outBuffer = Uint8List(16);
           for (var i = 0; i < hexBytes.length; i += 2) {
             final upperByte = byteConvert(hexBytes[i]);
             final lowerByte = byteConvert(hexBytes[i + 1]);
@@ -190,7 +185,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
         }
     }
 
-    throw new PostgreSQLException("Unsupported datatype");
+    throw PostgreSQLException("Unsupported datatype");
   }
 }
 
@@ -207,8 +202,8 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
       return null;
     }
 
-    final buffer = new ByteData.view(
-        value.buffer, value.offsetInBytes, value.lengthInBytes);
+    final buffer =
+        ByteData.view(value.buffer, value.offsetInBytes, value.lengthInBytes);
 
     switch (dataType) {
       case PostgreSQLDataType.name:
@@ -231,12 +226,11 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
         return buffer.getFloat64(0);
       case PostgreSQLDataType.timestampWithoutTimezone:
       case PostgreSQLDataType.timestampWithTimezone:
-        return new DateTime.utc(2000)
-            .add(new Duration(microseconds: buffer.getInt64(0)));
+        return DateTime.utc(2000)
+            .add(Duration(microseconds: buffer.getInt64(0)));
 
       case PostgreSQLDataType.date:
-        return new DateTime.utc(2000)
-            .add(new Duration(days: buffer.getInt32(0)));
+        return DateTime.utc(2000).add(Duration(days: buffer.getInt32(0)));
 
       case PostgreSQLDataType.json:
         {
@@ -276,7 +270,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
             return cipher[value];
           };
 
-          final buf = new StringBuffer();
+          final buf = StringBuffer();
           for (var i = 0; i < buffer.lengthInBytes; i++) {
             final byteValue = buffer.getUint8(i);
             final upperByteValue = byteValue ~/ 16;

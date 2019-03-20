@@ -10,7 +10,7 @@ class QueryQueue extends ListBase<Query<dynamic>>
   List<Query<dynamic>> _inner = [];
   bool _isCancelled = false;
 
-  PostgreSQLException get _cancellationException => new PostgreSQLException(
+  PostgreSQLException get _cancellationException => PostgreSQLException(
       "Query cancelled due to the database connection closing.");
 
   Query<dynamic> get pending {

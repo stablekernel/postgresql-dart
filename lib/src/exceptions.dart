@@ -110,7 +110,7 @@ class PostgreSQLException implements Exception {
 
   @override
   String toString() {
-    final buff = new StringBuffer("$severity $code: $message ");
+    final buff = StringBuffer("$severity $code: $message ");
 
     if (detail != null) {
       buff.write("Detail: $detail ");

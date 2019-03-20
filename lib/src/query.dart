@@ -33,7 +33,7 @@ class Query<T> {
 
   CachedQuery cache;
 
-  final _onComplete = new Completer<T>.sync();
+  final _onComplete = Completer<T>.sync();
   List<FieldDescription> _fieldDescriptions;
 
   List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
@@ -46,7 +46,7 @@ class Query<T> {
   void sendSimple(Socket socket) {
     final sqlString =
         PostgreSQLFormat.substitute(statement, substitutionValues);
-    final queryMessage = new QueryMessage(sqlString);
+    final queryMessage = QueryMessage(sqlString);
 
     socket.add(queryMessage.asBytes());
   }
@@ -71,19 +71,19 @@ class Query<T> {
     specifiedParameterTypeCodes = formatIdentifiers.map((i) => i.type).toList();
 
     final parameterList = formatIdentifiers
-        .map((id) => new ParameterValue(id, substitutionValues))
+        .map((id) => ParameterValue(id, substitutionValues))
         .toList();
 
     final messages = [
-      new ParseMessage(sqlString, statementName: statementName),
-      new DescribeMessage(statementName: statementName),
-      new BindMessage(parameterList, statementName: statementName),
-      new ExecuteMessage(),
-      new SyncMessage(),
+      ParseMessage(sqlString, statementName: statementName),
+      DescribeMessage(statementName: statementName),
+      BindMessage(parameterList, statementName: statementName),
+      ExecuteMessage(),
+      SyncMessage(),
     ];
 
     if (statementIdentifier != null) {
-      cache = new CachedQuery(statementIdentifier, formatIdentifiers);
+      cache = CachedQuery(statementIdentifier, formatIdentifiers);
     }
 
     socket.add(ClientMessage.aggregateBytes(messages));
@@ -93,13 +93,13 @@ class Query<T> {
       Map<String, dynamic> substitutionValues) {
     final statementName = cacheQuery.preparedStatementName;
     final parameterList = cacheQuery.orderedParameters
-        .map((identifier) => new ParameterValue(identifier, substitutionValues))
+        .map((identifier) => ParameterValue(identifier, substitutionValues))
         .toList();
 
     final bytes = ClientMessage.aggregateBytes([
-      new BindMessage(parameterList, statementName: statementName),
-      new ExecuteMessage(),
-      new SyncMessage()
+      BindMessage(parameterList, statementName: statementName),
+      ExecuteMessage(),
+      SyncMessage()
     ]);
 
     socket.add(bytes);
@@ -121,7 +121,7 @@ class Query<T> {
     }).any((v) => v == false);
 
     if (parametersAreMismatched) {
-      return new PostgreSQLException(
+      return PostgreSQLException(
           'Specified parameter types do not match column parameter types in query $statement');
     }
 
@@ -187,23 +187,23 @@ class ParameterValue {
   factory ParameterValue(PostgreSQLFormatIdentifier identifier,
       Map<String, dynamic> substitutionValues) {
     if (identifier.type == null) {
-      return new ParameterValue.text(substitutionValues[identifier.name]);
+      return ParameterValue.text(substitutionValues[identifier.name]);
     }
 
-    return new ParameterValue.binary(
+    return ParameterValue.binary(
         substitutionValues[identifier.name], identifier.type);
   }
 
   ParameterValue.binary(dynamic value, PostgreSQLDataType postgresType)
       : isBinary = true {
-    final converter = new PostgresBinaryEncoder(postgresType);
+    final converter = PostgresBinaryEncoder(postgresType);
     bytes = converter.convert(value);
     length = bytes?.length ?? 0;
   }
 
   ParameterValue.text(dynamic value) : isBinary = false {
     if (value != null) {
-      final converter = new PostgresTextEncoder(false);
+      final converter = PostgresTextEncoder(false);
       bytes = castBytes(utf8.encode(converter.convert(value)));
     }
     length = bytes?.length;
@@ -229,7 +229,7 @@ class FieldDescription {
 
   int parse(ByteData byteData, int initialOffset) {
     int offset = initialOffset;
-    final buf = new StringBuffer();
+    final buf = StringBuffer();
     int byte = 0;
     do {
       byte = byteData.getUint8(offset);
@@ -254,7 +254,7 @@ class FieldDescription {
     formatCode = byteData.getUint16(offset);
     offset += 2;
 
-    converter = new PostgresBinaryDecoder(typeID);
+    converter = PostgresBinaryDecoder(typeID);
 
     return offset;
   }
@@ -274,7 +274,7 @@ class PostgreSQLFormatToken {
   PostgreSQLFormatToken(this.type);
 
   PostgreSQLFormatTokenType type;
-  StringBuffer buffer = new StringBuffer();
+  StringBuffer buffer = StringBuffer();
 }
 
 class PostgreSQLFormatIdentifier {
@@ -311,12 +311,12 @@ class PostgreSQLFormatIdentifier {
       if (dataTypeString != null) {
         type = typeStringToCodeMap[dataTypeString];
         if (type == null) {
-          throw new FormatException(
+          throw FormatException(
               "Invalid type code in substitution variable '$t'");
         }
       }
     } else {
-      throw new FormatException(
+      throw FormatException(
           "Invalid format string identifier, must contain identifier name and optionally one data type in format '@identifier:dataType' (offending identifier: $t)");
     }
 

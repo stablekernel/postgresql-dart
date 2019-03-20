@@ -4,7 +4,7 @@ import 'package:test/test.dart';
 void main() {
   PostgreSQLConnection connection;
   setUp(() async {
-    connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
     await connection.open();
 
@@ -56,9 +56,9 @@ void main() {
     expect(row1[7], equals(10.0));
     expect(row1[8] is double, true);
     expect(row1[8], equals(10.0));
-    expect(row1[9], equals(new DateTime.utc(1983, 11, 6)));
-    expect(row1[10], equals(new DateTime.utc(1983, 11, 6, 6)));
-    expect(row1[11], equals(new DateTime.utc(1983, 11, 6, 6)));
+    expect(row1[9], equals(DateTime.utc(1983, 11, 6)));
+    expect(row1[10], equals(DateTime.utc(1983, 11, 6, 6)));
+    expect(row1[11], equals(DateTime.utc(1983, 11, 6, 6)));
     expect(row1[12], equals({"key": "value"}));
     expect(row1[13], equals([0]));
     expect(row1[14], equals("00000000-0000-0000-0000-000000000000"));
@@ -78,9 +78,9 @@ void main() {
     expect(row2[7], equals(10.25));
     expect(row2[8] is double, true);
     expect(row2[8], equals(10.125));
-    expect(row2[9], equals(new DateTime.utc(2183, 11, 6)));
-    expect(row2[10], equals(new DateTime.utc(2183, 11, 6, 0, 0, 0, 111, 111)));
-    expect(row2[11], equals(new DateTime.utc(2183, 11, 6, 0, 0, 0, 999, 999)));
+    expect(row2[9], equals(DateTime.utc(2183, 11, 6)));
+    expect(row2[10], equals(DateTime.utc(2183, 11, 6, 0, 0, 0, 111, 111)));
+    expect(row2[11], equals(DateTime.utc(2183, 11, 6, 0, 0, 0, 999, 999)));
     expect(
         row2[12],
         equals([

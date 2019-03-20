@@ -13,7 +13,7 @@ void main() {
     PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
       await connection.execute(
@@ -43,9 +43,9 @@ void main() {
         "t": "foobar",
         "f": 5.0,
         "d": 6.0,
-        "dt": new DateTime.utc(2000),
-        "ts": new DateTime.utc(2000, 2),
-        "tsz": new DateTime.utc(2000, 3)
+        "dt": DateTime.utc(2000),
+        "ts": DateTime.utc(2000, 2),
+        "tsz": DateTime.utc(2000, 3)
       });
 
       expect(hasCachedQueryNamed(connection, insertQueryString), true);
@@ -60,9 +60,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3)
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3)
       ];
       expect(results, [expectedRow1]);
 
@@ -74,9 +74,9 @@ void main() {
         "t": "barfoo",
         "f": 6.0,
         "d": 7.0,
-        "dt": new DateTime.utc(2001),
-        "ts": new DateTime.utc(2001, 2),
-        "tsz": new DateTime.utc(2001, 3)
+        "dt": DateTime.utc(2001),
+        "ts": DateTime.utc(2001, 2),
+        "tsz": DateTime.utc(2001, 3)
       });
 
       expect(hasCachedQueryNamed(connection, insertQueryString), true);
@@ -91,9 +91,9 @@ void main() {
         "barfoo",
         6.0,
         7.0,
-        new DateTime.utc(2001),
-        new DateTime.utc(2001, 2),
-        new DateTime.utc(2001, 3)
+        DateTime.utc(2001),
+        DateTime.utc(2001, 2),
+        DateTime.utc(2001, 3)
       ];
       expect(results, [expectedRow2]);
 
@@ -138,9 +138,9 @@ void main() {
         "t": "foobar",
         "f": 5.0,
         "d": 6.0,
-        "dt": new DateTime.utc(2000),
-        "ts": new DateTime.utc(2000, 2),
-        "tsz": new DateTime.utc(2000, 3)
+        "dt": DateTime.utc(2000),
+        "ts": DateTime.utc(2000, 2),
+        "tsz": DateTime.utc(2000, 3)
       });
 
       final expectedRow1 = [
@@ -153,9 +153,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3)
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3)
       ];
       expect(results, [expectedRow1]);
 
@@ -167,9 +167,9 @@ void main() {
         "t": "barfoo",
         "f": 6.0,
         "d": 7.0,
-        "dt": new DateTime.utc(2001),
-        "ts": new DateTime.utc(2001, 2),
-        "tsz": new DateTime.utc(2001, 3)
+        "dt": DateTime.utc(2001),
+        "ts": DateTime.utc(2001, 2),
+        "tsz": DateTime.utc(2001, 3)
       });
 
       final expectedRow2 = [
@@ -182,9 +182,9 @@ void main() {
         "barfoo",
         6.0,
         7.0,
-        new DateTime.utc(2001),
-        new DateTime.utc(2001, 2),
-        new DateTime.utc(2001, 3)
+        DateTime.utc(2001),
+        DateTime.utc(2001, 2),
+        DateTime.utc(2001, 3)
       ];
       expect(results, [expectedRow2]);
     });
@@ -208,9 +208,9 @@ void main() {
         "t": "foobar",
         "f": 5.0,
         "d": 6.0,
-        "dt": new DateTime.utc(2000),
-        "ts": new DateTime.utc(2000, 2),
-        "tsz": new DateTime.utc(2000, 3)
+        "dt": DateTime.utc(2000),
+        "ts": DateTime.utc(2000, 2),
+        "tsz": DateTime.utc(2000, 3)
       });
 
       final expectedRow1 = [
@@ -223,9 +223,9 @@ void main() {
         "foobar",
         5.0,
         6.0,
-        new DateTime.utc(2000),
-        new DateTime.utc(2000, 2),
-        new DateTime.utc(2000, 3)
+        DateTime.utc(2000),
+        DateTime.utc(2000, 2),
+        DateTime.utc(2000, 3)
       ];
       expect(results, [expectedRow1]);
 
@@ -237,9 +237,9 @@ void main() {
         "t": "barfoo",
         "f": 6.0,
         "d": 7.0,
-        "dt": new DateTime.utc(2001),
-        "ts": new DateTime.utc(2001, 2),
-        "tsz": new DateTime.utc(2001, 3)
+        "dt": DateTime.utc(2001),
+        "ts": DateTime.utc(2001, 2),
+        "tsz": DateTime.utc(2001, 3)
       });
 
       final expectedRow2 = [
@@ -252,9 +252,9 @@ void main() {
         "barfoo",
         6.0,
         7.0,
-        new DateTime.utc(2001),
-        new DateTime.utc(2001, 2),
-        new DateTime.utc(2001, 3)
+        DateTime.utc(2001),
+        DateTime.utc(2001, 2),
+        DateTime.utc(2001, 3)
       ];
       expect(results, [expectedRow2]);
 
@@ -283,7 +283,7 @@ void main() {
     PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
       await connection.execute(
@@ -439,11 +439,11 @@ void main() {
   });
 
   group("Failure cases", () {
-    var connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+    var connection = PostgreSQLConnection("localhost", 5432, "dart_test",
         username: "dart", password: "dart");
 
     setUp(() async {
-      connection = new PostgreSQLConnection("localhost", 5432, "dart_test",
+      connection = PostgreSQLConnection("localhost", 5432, "dart_test",
           username: "dart", password: "dart");
       await connection.open();
       await connection.execute(
