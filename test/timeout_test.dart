@@ -1,6 +1,8 @@
-import 'package:postgres/postgres.dart';
-import 'package:test/test.dart';
 import 'dart:async';
+
+import 'package:test/test.dart';
+
+import 'package:postgres/postgres.dart';
 
 void main() {
   PostgreSQLConnection conn;

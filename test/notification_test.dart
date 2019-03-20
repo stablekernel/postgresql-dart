@@ -67,7 +67,7 @@ void main() {
     });
 
     test("Notification many channel", () async {
-      Map<String, int> countResponse = new Map<String, int>();
+      Map<String, int> countResponse = <String, int>{};
       int totalCountResponse = 0;
       Completer finishExecute = new Completer();
       connection.notifications.listen((msg) {

@@ -1,8 +1,9 @@
 import 'dart:async';
 import 'dart:collection';
 
-import 'package:postgres/postgres.dart';
-import 'package:postgres/src/query.dart';
+import '../postgres.dart';
+
+import 'query.dart';
 
 class QueryQueue extends ListBase<Query<dynamic>>
     implements List<Query<dynamic>> {

@@ -1,4 +1,4 @@
-import 'package:postgres/src/query.dart';
+import 'query.dart';
 
 class QueryCache {
   final Map<String, CachedQuery> queries = {};

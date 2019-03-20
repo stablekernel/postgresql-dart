@@ -1,9 +1,9 @@
-import 'package:postgres/src/text_codec.dart';
-import 'types.dart';
 import 'query.dart';
+import 'text_codec.dart';
+import 'types.dart';
 
 class PostgreSQLFormat {
-  static int _AtSignCodeUnit = "@".codeUnitAt(0);
+  static final int _atSignCodeUnit = "@".codeUnitAt(0);
 
   static String id(String name, {PostgreSQLDataType type}) {
     if (type != null) {
@@ -65,7 +65,7 @@ class PostgreSQLFormat {
     iterator.moveNext();
     while (iterator.current != null) {
       if (currentPtr == null) {
-        if (iterator.current == _AtSignCodeUnit) {
+        if (iterator.current == _atSignCodeUnit) {
           currentPtr =
               new PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
           currentPtr.buffer.writeCharCode(iterator.current);
@@ -77,7 +77,7 @@ class PostgreSQLFormat {
           items.add(currentPtr);
         }
       } else if (currentPtr.type == PostgreSQLFormatTokenType.text) {
-        if (iterator.current == _AtSignCodeUnit) {
+        if (iterator.current == _atSignCodeUnit) {
           currentPtr =
               new PostgreSQLFormatToken(PostgreSQLFormatTokenType.variable);
           currentPtr.buffer.writeCharCode(iterator.current);
@@ -86,9 +86,9 @@ class PostgreSQLFormat {
           currentPtr.buffer.writeCharCode(iterator.current);
         }
       } else if (currentPtr.type == PostgreSQLFormatTokenType.variable) {
-        if (iterator.current == _AtSignCodeUnit) {
+        if (iterator.current == _atSignCodeUnit) {
           iterator.movePrevious();
-          if (iterator.current == _AtSignCodeUnit) {
+          if (iterator.current == _atSignCodeUnit) {
             currentPtr.buffer.writeCharCode(iterator.current);
             currentPtr.type = PostgreSQLFormatTokenType.text;
           } else {
@@ -129,29 +129,29 @@ class PostgreSQLFormat {
         idx++;
 
         if (identifier.typeCast != null) {
-          return val + "::" + identifier.typeCast;
+          return '$val::${identifier.typeCast}';
         }
 
         return val;
       }
-    }).join("");
+    }).join('');
   }
 
-  static int _lowercaseACodeUnit = "a".codeUnitAt(0);
-  static int _uppercaseACodeUnit = "A".codeUnitAt(0);
-  static int _lowercaseZCodeUnit = "z".codeUnitAt(0);
-  static int _uppercaseZCodeUnit = "Z".codeUnitAt(0);
-  static int _0CodeUnit = "0".codeUnitAt(0);
-  static int _9CodeUnit = "9".codeUnitAt(0);
-  static int _underscoreCodeUnit = "_".codeUnitAt(0);
-  static int _ColonCodeUnit = ":".codeUnitAt(0);
+  static final int _lowercaseACodeUnit = 'a'.codeUnitAt(0);
+  static final int _uppercaseACodeUnit = 'A'.codeUnitAt(0);
+  static final int _lowercaseZCodeUnit = 'z'.codeUnitAt(0);
+  static final int _uppercaseZCodeUnit = 'Z'.codeUnitAt(0);
+  static final int _codeUnit0 = '0'.codeUnitAt(0);
+  static final int _codeUnit9 = '9'.codeUnitAt(0);
+  static final int _underscoreCodeUnit = '_'.codeUnitAt(0);
+  static final int _colonCodeUnit = ':'.codeUnitAt(0);
 
   static bool _isIdentifier(int charCode) {
     return (charCode >= _lowercaseACodeUnit &&
             charCode <= _lowercaseZCodeUnit) ||
         (charCode >= _uppercaseACodeUnit && charCode <= _uppercaseZCodeUnit) ||
-        (charCode >= _0CodeUnit && charCode <= _9CodeUnit) ||
+        (charCode >= _codeUnit0 && charCode <= _codeUnit9) ||
         (charCode == _underscoreCodeUnit) ||
-        (charCode == _ColonCodeUnit);
+        (charCode == _colonCodeUnit);
   }
 }

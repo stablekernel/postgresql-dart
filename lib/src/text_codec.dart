@@ -128,9 +128,9 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
             timezoneMinuteOffset.abs().toString().padLeft(2, "0");
 
         if (timezoneHourOffset >= 0) {
-          hourComponent = "+${hourComponent}";
+          hourComponent = '+$hourComponent';
         } else {
-          hourComponent = "-${hourComponent}";
+          hourComponent = '-$hourComponent';
         }
 
         var timezoneString = [hourComponent, minuteComponent].join(":");
@@ -139,7 +139,7 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
     }
 
     if (string.substring(0, 1) == "-") {
-      string = string.substring(1) + " BC";
+      string = '${string.substring(1)} BC';
     } else if (string.substring(0, 1) == "+") {
       string = string.substring(1);
     }

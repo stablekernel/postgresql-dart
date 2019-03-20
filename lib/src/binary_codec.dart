@@ -3,8 +3,8 @@ import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
 
-import 'package:postgres/postgres.dart';
-import 'package:postgres/src/types.dart';
+import '../postgres.dart';
+import 'types.dart';
 
 class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
   const PostgresBinaryEncoder(this.dataType);

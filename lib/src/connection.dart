@@ -6,15 +6,13 @@ import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
 
-import 'package:postgres/src/query_cache.dart';
-import 'package:postgres/src/execution_context.dart';
-import 'package:postgres/src/query_queue.dart';
-
+import 'client_messages.dart';
+import 'execution_context.dart';
 import 'message_window.dart';
 import 'query.dart';
-
+import 'query_cache.dart';
+import 'query_queue.dart';
 import 'server_messages.dart';
-import 'client_messages.dart';
 
 part 'connection_fsm.dart';
 
@@ -104,7 +102,7 @@ class PostgreSQLConnection extends Object
   /// Prior to connection, it is the empty map.
   final Map<String, String> settings = {};
 
-  QueryCache _cache = new QueryCache();
+  final _cache = new QueryCache();
   Socket _socket;
   MessageFramer _framer = new MessageFramer();
   int _processID;
@@ -144,9 +142,7 @@ class PostgreSQLConnection extends Object
       }
 
       var connectionComplete = new Completer();
-      _socket.listen(_readData,
-          onError: (err, StackTrace st) => _close(err, st),
-          onDone: () => _close());
+      _socket.listen(_readData, onError: _close, onDone: _close);
 
       _transitionToState(
           new _PostgreSQLConnectionStateSocketConnected(connectionComplete));
@@ -330,8 +326,8 @@ class Notification {
 
 abstract class _PostgreSQLExecutionContextMixin
     implements PostgreSQLExecutionContext {
-  Map<int, String> _tableOIDNameMap = {};
-  QueryQueue _queue = new QueryQueue();
+  final _tableOIDNameMap = <int, String>{};
+  final _queue = new QueryQueue();
 
   PostgreSQLConnection get _connection;
 

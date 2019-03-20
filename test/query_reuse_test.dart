@@ -1,7 +1,9 @@
-import 'package:postgres/postgres.dart';
-import 'package:test/test.dart';
 import 'dart:async';
 import 'dart:mirrors';
+
+import 'package:test/test.dart';
+
+import 'package:postgres/postgres.dart';
 
 String sid(String id, PostgreSQLDataType dt) =>
     PostgreSQLFormat.id(id, type: dt);

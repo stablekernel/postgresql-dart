@@ -1,8 +1,9 @@
 // ignore_for_file: unawaited_futures
+import 'dart:async';
+
+import 'package:test/test.dart';
 
 import 'package:postgres/postgres.dart';
-import 'package:test/test.dart';
-import 'dart:async';
 
 void main() {
   group("Transaction behavior", () {
@@ -414,10 +415,10 @@ void main() {
       try {
         await conn.transaction((c) async {
           await c.query("INSERT INTO t (id) VALUES (1)");
-          throw 'foo';
+          throw Exception('foo');
         });
         expect(true, false);
-      } on String {}
+      } on Exception {}
 
       var noRows = await conn.query("SELECT id FROM t");
       expect(noRows, []);
@@ -430,7 +431,7 @@ void main() {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
         orderEnsurer.add(2);
-        throw 'foo';
+        throw Exception('foo');
       }).catchError((e) => null);
 
       orderEnsurer.add(11);
@@ -448,7 +449,7 @@ void main() {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
         orderEnsurer.add(2);
-        throw 'foo';
+        throw Exception('foo');
       }).catchError((e) => null);
 
       var result = await conn.transaction((ctx) async {
@@ -465,10 +466,10 @@ void main() {
       try {
         await conn.transaction((c) async {
           await c.query("INSERT INTO t (id) VALUES (1)");
-          throw 'foo';
+          throw Exception('foo');
         });
         expect(true, false);
-      } on String {}
+      } on Exception {}
 
       var result = await conn.transaction((ctx) async {
         return await ctx.query("SELECT id FROM t");
@@ -568,7 +569,7 @@ void main() {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
         orderEnsurer.add(2);
-        await c.cancelTransaction();
+        c.cancelTransaction();
         await c.query("INSERT INTO t (id) VALUES (2)");
       });
 
@@ -587,7 +588,7 @@ void main() {
         orderEnsurer.add(1);
         await c.query("INSERT INTO t (id) VALUES (1)");
         orderEnsurer.add(2);
-        await c.cancelTransaction();
+        c.cancelTransaction();
         await c.query("INSERT INTO t (id) VALUES (2)");
         orderEnsurer.add(3);
       });

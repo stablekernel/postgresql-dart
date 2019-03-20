@@ -1,9 +1,12 @@
 // ignore_for_file: unawaited_futures
-import 'package:postgres/postgres.dart';
-import 'package:test/test.dart';
-import 'dart:io';
+
 import 'dart:async';
+import 'dart:io';
 import 'dart:mirrors';
+
+import 'package:test/test.dart';
+
+import 'package:postgres/postgres.dart';
 
 void main() {
   group("Connection lifecycle", () {

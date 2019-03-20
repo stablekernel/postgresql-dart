@@ -5,14 +5,13 @@ import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
 
-import 'package:postgres/src/binary_codec.dart';
-import 'package:postgres/src/execution_context.dart';
-
-import 'package:postgres/src/text_codec.dart';
-import 'types.dart';
-import 'connection.dart';
-import 'substituter.dart';
+import 'binary_codec.dart';
 import 'client_messages.dart';
+import 'connection.dart';
+import 'execution_context.dart';
+import 'substituter.dart';
+import 'text_codec.dart';
+import 'types.dart';
 
 class Query<T> {
   Query(this.statement, this.substitutionValues, this.connection,
@@ -34,7 +33,7 @@ class Query<T> {
 
   CachedQuery cache;
 
-  Completer<T> _onComplete = new Completer.sync();
+  final _onComplete = new Completer<T>.sync();
   List<FieldDescription> _fieldDescriptions;
 
   List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
@@ -122,7 +121,7 @@ class Query<T> {
 
     if (parametersAreMismatched) {
       return new PostgreSQLException(
-          "Specified parameter types do not match column parameter types in query ${statement}");
+          'Specified parameter types do not match column parameter types in query $statement');
     }
 
     return null;
@@ -315,7 +314,7 @@ class PostgreSQLFormatIdentifier {
       }
     } else {
       throw new FormatException(
-          "Invalid format string identifier, must contain identifier name and optionally one data type in format '@identifier:dataType' (offending identifier: ${t})");
+          "Invalid format string identifier, must contain identifier name and optionally one data type in format '@identifier:dataType' (offending identifier: $t)");
     }
 
     // Strip @

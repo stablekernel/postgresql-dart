@@ -1,10 +1,11 @@
-import 'utf8_backed_string.dart';
 import 'dart:typed_data';
-import 'query.dart';
-import 'constants.dart';
 
 import 'package:buffer/buffer.dart';
 import 'package:crypto/crypto.dart';
+
+import 'constants.dart';
+import 'query.dart';
+import 'utf8_backed_string.dart';
 
 abstract class ClientMessage {
   static const int FormatText = 0;
@@ -95,11 +96,11 @@ class StartupMessage extends ClientMessage {
 
 class AuthMD5Message extends ClientMessage {
   AuthMD5Message(String username, String password, List<int> saltBytes) {
-    var passwordHash =
-        md5.convert("${password}${username}".codeUnits).toString();
-    var saltString = new String.fromCharCodes(saltBytes);
-    hashedAuthString = new UTF8BackedString(
-        "md5" + md5.convert("$passwordHash$saltString".codeUnits).toString());
+    final passwordHash = md5.convert('$password$username'.codeUnits).toString();
+    final saltString = new String.fromCharCodes(saltBytes);
+    final md5Hash =
+        md5.convert('$passwordHash$saltString'.codeUnits).toString();
+    hashedAuthString = new UTF8BackedString('md5$md5Hash');
   }
 
   UTF8BackedString hashedAuthString;

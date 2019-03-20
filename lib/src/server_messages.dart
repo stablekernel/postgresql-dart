@@ -131,7 +131,7 @@ class DataRowMessage extends ServerMessage {
     }
   }
 
-  String toString() => "Data Row Message: ${values}";
+  String toString() => 'Data Row Message: $values';
 }
 
 class NotificationResponseMessage extends ServerMessage {
@@ -280,7 +280,7 @@ class ErrorField {
   int identificationToken;
 
   String get text => _buffer.toString();
-  StringBuffer _buffer = new StringBuffer();
+  final _buffer = new StringBuffer();
 
   void add(int byte) {
     if (identificationToken == null) {
