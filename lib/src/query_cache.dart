@@ -4,6 +4,9 @@ class QueryCache {
   final Map<String, CachedQuery> _queries = {};
   int _idCounter = 0;
 
+  int get length => _queries.length;
+  bool get isEmpty => _queries.isEmpty;
+
   void add(Query<dynamic> query) {
     if (query.cache == null) {
       return;
