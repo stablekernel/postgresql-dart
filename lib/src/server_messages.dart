@@ -4,15 +4,12 @@ import 'dart:typed_data';
 import 'connection.dart';
 import 'query.dart';
 
-abstract class ServerMessage {
-  void readBytes(Uint8List bytes);
-}
+abstract class ServerMessage {}
 
 class ErrorResponseMessage implements ServerMessage {
   List<ErrorField> fields = [ErrorField()];
 
-  @override
-  void readBytes(Uint8List bytes) {
+  ErrorResponseMessage(Uint8List bytes) {
     final lastByteRemovedList =
         Uint8List.view(bytes.buffer, bytes.offsetInBytes, bytes.length - 1);
 
@@ -41,8 +38,7 @@ class AuthenticationMessage implements ServerMessage {
 
   List<int> salt;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  AuthenticationMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
     type = view.getUint32(0);
 
@@ -59,8 +55,7 @@ class ParameterStatusMessage extends ServerMessage {
   String name;
   String value;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  ParameterStatusMessage(Uint8List bytes) {
     name = utf8.decode(bytes.sublist(0, bytes.indexOf(0)));
     value =
         utf8.decode(bytes.sublist(bytes.indexOf(0) + 1, bytes.lastIndexOf(0)));
@@ -74,8 +69,7 @@ class ReadyForQueryMessage extends ServerMessage {
 
   String state;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  ReadyForQueryMessage(Uint8List bytes) {
     state = utf8.decode(bytes);
   }
 }
@@ -84,8 +78,7 @@ class BackendKeyMessage extends ServerMessage {
   int processID;
   int secretKey;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  BackendKeyMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
     secretKey = view.getUint32(4);
@@ -95,8 +88,7 @@ class BackendKeyMessage extends ServerMessage {
 class RowDescriptionMessage extends ServerMessage {
   List<FieldDescription> fieldDescriptions;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  RowDescriptionMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
     int offset = 0;
     final fieldCount = view.getInt16(offset);
@@ -114,8 +106,7 @@ class RowDescriptionMessage extends ServerMessage {
 class DataRowMessage extends ServerMessage {
   List<ByteData> values = [];
 
-  @override
-  void readBytes(Uint8List bytes) {
+  DataRowMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
     int offset = 0;
     final fieldCount = view.getInt16(offset);
@@ -147,8 +138,7 @@ class NotificationResponseMessage extends ServerMessage {
   String channel;
   String payload;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  NotificationResponseMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
     processID = view.getUint32(0);
     channel = utf8.decode(bytes.sublist(4, bytes.indexOf(0, 4)));
@@ -162,8 +152,7 @@ class CommandCompleteMessage extends ServerMessage {
 
   static RegExp identifierExpression = RegExp(r'[A-Z ]*');
 
-  @override
-  void readBytes(Uint8List bytes) {
+  CommandCompleteMessage(Uint8List bytes) {
     final str = utf8.decode(bytes.sublist(0, bytes.length - 1));
 
     final match = identifierExpression.firstMatch(str);
@@ -176,16 +165,14 @@ class CommandCompleteMessage extends ServerMessage {
 }
 
 class ParseCompleteMessage extends ServerMessage {
-  @override
-  void readBytes(Uint8List bytes) {}
+  ParseCompleteMessage();
 
   @override
   String toString() => 'Parse Complete Message';
 }
 
 class BindCompleteMessage extends ServerMessage {
-  @override
-  void readBytes(Uint8List bytes) {}
+  BindCompleteMessage();
 
   @override
   String toString() => 'Bind Complete Message';
@@ -194,8 +181,7 @@ class BindCompleteMessage extends ServerMessage {
 class ParameterDescriptionMessage extends ServerMessage {
   List<int> parameterTypeIDs;
 
-  @override
-  void readBytes(Uint8List bytes) {
+  ParameterDescriptionMessage(Uint8List bytes) {
     final view = ByteData.view(bytes.buffer, bytes.offsetInBytes);
 
     int offset = 0;
@@ -212,21 +198,17 @@ class ParameterDescriptionMessage extends ServerMessage {
 }
 
 class NoDataMessage extends ServerMessage {
-  @override
-  void readBytes(Uint8List bytes) {}
+  NoDataMessage();
 
   @override
   String toString() => 'No Data Message';
 }
 
 class UnknownMessage extends ServerMessage {
-  Uint8List bytes;
-  int code;
+  final int code;
+  final Uint8List bytes;
 
-  @override
-  void readBytes(Uint8List bytes) {
-    this.bytes = bytes;
-  }
+  UnknownMessage(this.code, this.bytes);
 
   @override
   int get hashCode {

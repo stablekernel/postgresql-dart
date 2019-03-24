@@ -8,22 +8,22 @@ import 'server_messages.dart';
 const int _headerByteSize = 5;
 final _emptyData = Uint8List(0);
 
-typedef ServerMessage _ServerMessageFn();
+typedef ServerMessage _ServerMessageFn(Uint8List data);
 
 Map<int, _ServerMessageFn> _messageTypeMap = {
-  49: () => ParseCompleteMessage(),
-  50: () => BindCompleteMessage(),
-  65: () => NotificationResponseMessage(),
-  67: () => CommandCompleteMessage(),
-  68: () => DataRowMessage(),
-  69: () => ErrorResponseMessage(),
-  75: () => BackendKeyMessage(),
-  82: () => AuthenticationMessage(),
-  83: () => ParameterStatusMessage(),
-  84: () => RowDescriptionMessage(),
-  90: () => ReadyForQueryMessage(),
-  110: () => NoDataMessage(),
-  116: () => ParameterDescriptionMessage()
+  49: (d) => ParseCompleteMessage(),
+  50: (d) => BindCompleteMessage(),
+  65: (d) => NotificationResponseMessage(d),
+  67: (d) => CommandCompleteMessage(d),
+  68: (d) => DataRowMessage(d),
+  69: (d) => ErrorResponseMessage(d),
+  75: (d) => BackendKeyMessage(d),
+  82: (d) => AuthenticationMessage(d),
+  83: (d) => ParameterStatusMessage(d),
+  84: (d) => RowDescriptionMessage(d),
+  90: (d) => ReadyForQueryMessage(d),
+  110: (d) => NoDataMessage(),
+  116: (d) => ParameterDescriptionMessage(d),
 };
 
 class MessageFramer {
@@ -56,8 +56,7 @@ class MessageFramer {
             _expectedLength == 0 ? _emptyData : _reader.read(_expectedLength);
         final msgMaker = _messageTypeMap[_type];
         final msg =
-            msgMaker == null ? (UnknownMessage()..code = _type) : msgMaker();
-        msg.readBytes(data);
+            msgMaker == null ? UnknownMessage(_type, data) : msgMaker(data);
         messageQueue.add(msg);
         _type = null;
         _expectedLength = null;
