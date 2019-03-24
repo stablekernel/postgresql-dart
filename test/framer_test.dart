@@ -22,7 +22,7 @@ void main() {
       messageWithBytes([1, 2, 3], 1)
     ]));
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -36,7 +36,7 @@ void main() {
       messageWithBytes([1, 2, 3, 4], 2)
     ]));
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -55,7 +55,7 @@ void main() {
 
     framer.addBytes(fragments.last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -76,7 +76,7 @@ void main() {
 
     framer.addBytes(fragments.last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -95,7 +95,7 @@ void main() {
 
     framer.addBytes(message2Fragments.last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -117,7 +117,7 @@ void main() {
 
     framer.addBytes(message2Fragments.last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -136,7 +136,7 @@ void main() {
 
     framer.addBytes(fragments.last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 1
@@ -156,7 +156,7 @@ void main() {
 
     framer.addBytes(fragmentedMessageBuffer(message, 8).last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 0
@@ -185,7 +185,7 @@ void main() {
         fragmentedMessageBuffer(fragmentedMessageBuffer(message, 3).last, 6)
             .last);
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [
       UnknownMessage()
         ..code = 0
@@ -200,7 +200,7 @@ void main() {
   test('Frame with no data', () {
     framer.addBytes(bufferWithMessages([messageWithBytes([], 10)]));
 
-    final messages = framer.messageQueue.map((f) => f.message).toList();
+    final messages = framer.messageQueue.toList();
     expect(messages, [UnknownMessage()..code = 10]);
   });
 }
@@ -231,7 +231,7 @@ flush(MessageFramer framer) {
     messageWithBytes([1, 2, 3], 1)
   ]));
 
-  final messages = framer.messageQueue.map((f) => f.message).toList();
+  final messages = framer.messageQueue.toList();
   expect(messages, [
     UnknownMessage()
       ..code = 1
