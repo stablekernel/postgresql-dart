@@ -25,11 +25,14 @@ class ErrorResponseMessage implements ServerMessage {
       } else if (byte == 0) {
         fields.add(ErrorField(identificationToken, sb.toString()));
         identificationToken = null;
+        sb = null;
       } else {
         sb.writeCharCode(byte);
       }
     }
-    assert(identificationToken == null);
+    if (identificationToken != null && sb != null) {
+      fields.add(ErrorField(identificationToken, sb.toString()));
+    }
   }
 }
 
