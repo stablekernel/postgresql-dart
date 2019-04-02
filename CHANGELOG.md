@@ -5,6 +5,7 @@
 - Restricted field access on [PostgreSQLConnection].
 - Connection-level default query timeout.
 - Option to specify timeout for the transaction's `"COMMIT"` query.
+- Improved support of `UInt8List` for `BYTEA` columns.
 
 ## 1.0.2
 - Add connection queue size

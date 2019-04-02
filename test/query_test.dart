@@ -1,5 +1,8 @@
-import 'package:postgres/postgres.dart';
+import 'dart:typed_data';
+
 import 'package:test/test.dart';
+
+import 'package:postgres/postgres.dart';
 import 'package:postgres/src/types.dart';
 
 void main() {
@@ -15,7 +18,7 @@ void main() {
           '(i int, s serial, bi bigint, '
           'bs bigserial, bl boolean, si smallint, '
           't text, f real, d double precision, '
-          'dt date, ts timestamp, tsz timestamptz, j jsonb, u uuid)');
+          'dt date, ts timestamp, tsz timestamptz, j jsonb, ba bytea u uuid)');
       await connection.execute(
           'CREATE TEMPORARY TABLE u (i1 int not null, i2 int not null);');
       await connection
@@ -107,7 +110,7 @@ void main() {
 
     test('Query without specifying types', () async {
       var result = await connection.query(
-          'INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz, j, u) values '
+          'INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz, j, ba, u) values '
           '(${PostgreSQLFormat.id('i')},'
           '${PostgreSQLFormat.id('bi')},'
           '${PostgreSQLFormat.id('bl')},'
@@ -119,8 +122,9 @@ void main() {
           '${PostgreSQLFormat.id('ts')},'
           '${PostgreSQLFormat.id('tsz')},'
           '${PostgreSQLFormat.id('j')},'
+          '${PostgreSQLFormat.id('ba')},'
           '${PostgreSQLFormat.id('u')}'
-          ') returning i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, u',
+          ') returning i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, ba, u',
           substitutionValues: {
             'i': 1,
             'bi': 2,
@@ -133,6 +137,7 @@ void main() {
             'ts': DateTime.utc(2000, 2),
             'tsz': DateTime.utc(2000, 3),
             'j': {'a': 'b'},
+            'ba': Uint8List.fromList([0, 1, 2, 255]),
             'u': '01234567-89ab-cdef-0123-0123456789ab'
           });
 
@@ -150,17 +155,18 @@ void main() {
         DateTime.utc(2000, 2),
         DateTime.utc(2000, 3),
         {'a': 'b'},
+        [0, 1, 2, 255],
         '01234567-89ab-cdef-0123-0123456789ab'
       ];
       expect(result, [expectedRow]);
       result = await connection.query(
-          'select i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, u from t');
+          'select i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, ba, u from t');
       expect(result, [expectedRow]);
     });
 
     test('Query by specifying all types', () async {
       var result = await connection.query(
-          'INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz, j, u) values '
+          'INSERT INTO t (i, bi, bl, si, t, f, d, dt, ts, tsz, j, ba, u) values '
           '(${PostgreSQLFormat.id('i', type: PostgreSQLDataType.integer)},'
           '${PostgreSQLFormat.id('bi', type: PostgreSQLDataType.bigInteger)},'
           '${PostgreSQLFormat.id('bl', type: PostgreSQLDataType.boolean)},'
@@ -172,8 +178,9 @@ void main() {
           '${PostgreSQLFormat.id('ts', type: PostgreSQLDataType.timestampWithoutTimezone)},'
           '${PostgreSQLFormat.id('tsz', type: PostgreSQLDataType.timestampWithTimezone)},'
           '${PostgreSQLFormat.id('j', type: PostgreSQLDataType.json)},'
+          '${PostgreSQLFormat.id('ba', type: PostgreSQLDataType.byteArray)},'
           '${PostgreSQLFormat.id('u', type: PostgreSQLDataType.uuid)})'
-          ' returning i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, u',
+          ' returning i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, ba, u',
           substitutionValues: {
             'i': 1,
             'bi': 2,
@@ -186,6 +193,7 @@ void main() {
             'ts': DateTime.utc(2000, 2),
             'tsz': DateTime.utc(2000, 3),
             'j': {'key': 'value'},
+            'ba': Uint8List.fromList([0, 1, 2, 255]),
             'u': '01234567-89ab-cdef-0123-0123456789ab'
           });
 
@@ -203,12 +211,13 @@ void main() {
         DateTime.utc(2000, 2),
         DateTime.utc(2000, 3),
         {'key': 'value'},
+        [0, 1, 2, 255],
         '01234567-89ab-cdef-0123-0123456789ab'
       ];
       expect(result, [expectedRow]);
 
       result = await connection.query(
-          'select i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, u from t');
+          'select i,s, bi, bs, bl, si, t, f, d, dt, ts, tsz, j, ba, u from t');
       expect(result, [expectedRow]);
     });
 

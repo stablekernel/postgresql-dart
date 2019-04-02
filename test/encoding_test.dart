@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:test/test.dart';
 
@@ -338,6 +339,13 @@ void main() {
       expect(encoder.convert({'a': 'b'}), '{"a":"b"}');
       expect(encoder.convert({'a': true}), '{"a":true}');
       expect(encoder.convert({'b': false}), '{"b":false}');
+    });
+
+    test('Encode UInt8List', () {
+      final encoder = PostgresTextEncoder(false);
+
+      expect(encoder.convert(Uint8List.fromList(List.generate(33, (i) => i))),
+          'decode(\'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8g\', \'base64\')');
     });
 
     test('Attempt to infer unknown type throws exception', () {

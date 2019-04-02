@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:postgres/postgres.dart';
 
@@ -35,6 +36,10 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
 
     if (value is Map) {
       return encodeJSON(value);
+    }
+
+    if (value is Uint8List) {
+      return encodeBytes(value);
     }
 
     throw PostgreSQLException("Could not infer type of value '$value'.");
@@ -157,5 +162,13 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
     }
 
     return json.encode(value);
+  }
+
+  String encodeBytes(Uint8List value) {
+    final sb = StringBuffer();
+    sb.write('decode(\'');
+    sb.write(base64.encode(value));
+    sb.write('\', \'base64\')');
+    return sb.toString();
   }
 }
