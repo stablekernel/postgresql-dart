@@ -103,6 +103,7 @@ class PostgreSQLConnection extends Object
   /// Prior to connection, it is the empty map.
   final Map<String, String> settings = {};
 
+  final _oidCache = _OIDCache();
   final _cache = QueryCache();
   Socket _socket;
   MessageFramer _framer = MessageFramer();
@@ -325,9 +326,47 @@ class Notification {
   final String payload;
 }
 
+class _OIDCache {
+  final _tableOIDNameMap = <int, String>{};
+
+  Future _resolveOids(
+      PostgreSQLExecutionContext c, List<FieldDescription> columns) async {
+    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
+    // It's not a significant impact here, but an area for optimization. This includes
+    // assigning resolvedTableName
+    final tableOIDs = Set<int>.from(columns.map((f) => f.tableID));
+    final List<int> unresolvedTableOIDs = tableOIDs
+        .where((oid) =>
+            oid != null && oid > 0 && !_tableOIDNameMap.containsKey(oid))
+        .toList();
+    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
+
+    if (unresolvedTableOIDs.isNotEmpty) {
+      await _resolveTableOIDs(c, unresolvedTableOIDs);
+    }
+
+    columns.forEach((desc) {
+      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
+    });
+  }
+
+  Future _resolveTableOIDs(PostgreSQLExecutionContext c, List<int> oids) async {
+    final unresolvedIDString = oids.join(',');
+    final orderedTableNames = await c.query(
+        "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
+
+    final iterator = oids.iterator;
+    orderedTableNames.forEach((tableName) {
+      iterator.moveNext();
+      if (tableName.first != null) {
+        _tableOIDNameMap[iterator.current] = tableName.first as String;
+      }
+    });
+  }
+}
+
 abstract class _PostgreSQLExecutionContextMixin
     implements PostgreSQLExecutionContext {
-  final _tableOIDNameMap = <int, String>{};
   final _queue = QueryQueue();
 
   PostgreSQLConnection get _connection;
@@ -355,9 +394,13 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+    final metaData =
+        PostgreSQLQueryMetaData(fieldDescriptions: query.fieldDescriptions);
+    await _connection._oidCache
+        ._resolveOids(this, metaData.fieldDescriptions);
     return PostgreSQLQueryResult(
-      rows.map((cols) => PostgreSQLRow(cols)).toList(),
-      fieldDescriptions: query.fieldDescriptions,
+      metaData,
+      rows.map((cols) => PostgreSQLRow(metaData, cols)).toList(),
     );
   }
 
@@ -373,7 +416,7 @@ abstract class _PostgreSQLExecutionContextMixin
       allowReuse: allowReuse,
       timeoutInSeconds: timeoutInSeconds,
     );
-    return _mapifyRows(rows, rows.fieldDescriptions);
+    return rows.map((r) => r.toTableMap()).toList();
   }
 
   @override
@@ -394,56 +437,6 @@ abstract class _PostgreSQLExecutionContextMixin
 
   @override
   void cancelTransaction({String reason});
-
-  Future<List<Map<String, Map<String, dynamic>>>> _mapifyRows(
-      List<List<dynamic>> rows, List<FieldDescription> columns) async {
-    //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
-    // It's not a significant impact here, but an area for optimization. This includes
-    // assigning resolvedTableName
-    final tableOIDs = Set<int>.from(columns.map((f) => f.tableID));
-    final List<int> unresolvedTableOIDs = tableOIDs
-        .where((oid) =>
-            oid != null && oid > 0 && !_tableOIDNameMap.containsKey(oid))
-        .toList();
-    unresolvedTableOIDs.sort((int lhs, int rhs) => lhs.compareTo(rhs));
-
-    if (unresolvedTableOIDs.isNotEmpty) {
-      await _resolveTableOIDs(unresolvedTableOIDs);
-    }
-
-    columns.forEach((desc) {
-      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
-    });
-
-    final tableNames = tableOIDs.map((oid) => _tableOIDNameMap[oid]).toList();
-    return rows.map((row) {
-      final rowMap = Map<String, Map<String, dynamic>>.fromIterable(tableNames,
-          key: (name) => name as String, value: (_) => <String, dynamic>{});
-
-      final iterator = columns.iterator;
-      row.forEach((column) {
-        iterator.moveNext();
-        rowMap[iterator.current.resolvedTableName][iterator.current.fieldName] =
-            column;
-      });
-
-      return rowMap;
-    }).toList();
-  }
-
-  Future _resolveTableOIDs(List<int> oids) async {
-    final unresolvedIDString = oids.join(',');
-    final orderedTableNames = await query(
-        "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
-
-    final iterator = oids.iterator;
-    orderedTableNames.forEach((tableName) {
-      iterator.moveNext();
-      if (tableName.first != null) {
-        _tableOIDNameMap[iterator.current] = tableName.first as String;
-      }
-    });
-  }
 
   Future<T> _enqueue<T>(Query<T> query, {int timeoutInSeconds = 30}) async {
     if (_queue.add(query)) {
