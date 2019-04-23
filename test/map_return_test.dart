@@ -1,4 +1,5 @@
 import 'dart:async';
+
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
 
@@ -146,7 +147,7 @@ class InterceptingConnection extends PostgreSQLConnection {
   List<String> queries = [];
 
   @override
-  Future<List<List<dynamic>>> query(String fmtString,
+  Future<PostgreSQLQueryResult> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse = true,
       int timeoutInSeconds}) {

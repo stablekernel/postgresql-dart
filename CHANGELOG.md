@@ -8,6 +8,7 @@
 - Optimized byte buffer parsing and construction with `package:buffer`.
 - Hardened codebase with `package:pedantic` and additional lints.
 - Updated codebase to Dart 2.2.
+- `query` returns `PostgreSQLQueryResult` and `PostgreSQLRow`.
 
 ## 1.0.2
 - Add connection queue size

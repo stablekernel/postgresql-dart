@@ -12,6 +12,7 @@ import 'message_window.dart';
 import 'query.dart';
 import 'query_cache.dart';
 import 'query_queue.dart';
+import 'query_result.dart';
 import 'server_messages.dart';
 
 part 'connection_fsm.dart';
@@ -337,28 +338,7 @@ abstract class _PostgreSQLExecutionContextMixin
   int get queueSize => _queue.length;
 
   @override
-  Future<List<List<dynamic>>> query(String fmtString,
-      {Map<String, dynamic> substitutionValues,
-      bool allowReuse = true,
-      int timeoutInSeconds}) async {
-    timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
-    if (_connection.isClosed) {
-      throw PostgreSQLException(
-          'Attempting to execute query, but connection is not open.');
-    }
-
-    final query = Query<List<List<dynamic>>>(
-        fmtString, substitutionValues, _connection, _transaction);
-    if (allowReuse) {
-      query.statementIdentifier = _connection._cache.identifierForQuery(query);
-    }
-
-    return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-  }
-
-  @override
-  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
-      String fmtString,
+  Future<PostgreSQLQueryResult> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse = true,
       int timeoutInSeconds}) async {
@@ -375,8 +355,25 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+    return PostgreSQLQueryResult(
+      rows.map((cols) => PostgreSQLRow(cols)).toList(),
+      fieldDescriptions: query.fieldDescriptions,
+    );
+  }
 
-    return _mapifyRows(rows, query.fieldDescriptions);
+  @override
+  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
+      String fmtString,
+      {Map<String, dynamic> substitutionValues,
+      bool allowReuse = true,
+      int timeoutInSeconds}) async {
+    final rows = await query(
+      fmtString,
+      substitutionValues: substitutionValues,
+      allowReuse: allowReuse,
+      timeoutInSeconds: timeoutInSeconds,
+    );
+    return _mapifyRows(rows, rows.fieldDescriptions);
   }
 
   @override
