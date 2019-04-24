@@ -332,6 +332,7 @@ class _OIDCache {
   Future<List<PostgreSQLResultColumn>> _resolveOids(
       _PostgreSQLExecutionContextMixin c,
       List<PostgreSQLResultColumn> columns) async {
+    if (columns == null) return null;
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
