@@ -330,7 +330,7 @@ class _OIDCache {
   final _tableOIDNameMap = <int, String>{};
 
   Future<List<PostgreSQLResultColumn>> _resolveOids(
-      PostgreSQLExecutionContext c,
+      _PostgreSQLExecutionContextMixin c,
       List<PostgreSQLResultColumn> columns) async {
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
@@ -351,10 +351,13 @@ class _OIDCache {
         .toList();
   }
 
-  Future _resolveTableOIDs(PostgreSQLExecutionContext c, List<int> oids) async {
+  Future _resolveTableOIDs(
+      _PostgreSQLExecutionContextMixin c, List<int> oids) async {
     final unresolvedIDString = oids.join(',');
-    final orderedTableNames = await c.query(
-        "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC");
+    final orderedTableNames = await c._query(
+      "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC",
+      resolveOids: false,
+    );
 
     final iterator = oids.iterator;
     orderedTableNames.forEach((tableName) {
@@ -379,9 +382,22 @@ abstract class _PostgreSQLExecutionContextMixin
 
   @override
   Future<PostgreSQLResult> query(String fmtString,
-      {Map<String, dynamic> substitutionValues,
-      bool allowReuse = true,
-      int timeoutInSeconds}) async {
+          {Map<String, dynamic> substitutionValues,
+          bool allowReuse = true,
+          int timeoutInSeconds}) =>
+      _query(fmtString,
+          substitutionValues: substitutionValues,
+          allowReuse: allowReuse,
+          timeoutInSeconds: timeoutInSeconds,
+          resolveOids: true);
+
+  Future<PostgreSQLResult> _query(
+    String fmtString, {
+    Map<String, dynamic> substitutionValues,
+    bool allowReuse = true,
+    int timeoutInSeconds,
+    bool resolveOids = true,
+  }) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
@@ -395,8 +411,9 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    final columns =
-        await _connection._oidCache._resolveOids(this, query.resultColumns);
+    final columns = resolveOids
+        ? await _connection._oidCache._resolveOids(this, query.resultColumns)
+        : query.resultColumns;
     final metaData = PostgreSQLResultMetaData(columns: columns);
     return PostgreSQLResult(
       metaData,
