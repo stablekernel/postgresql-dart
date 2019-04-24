@@ -329,8 +329,9 @@ class Notification {
 class _OIDCache {
   final _tableOIDNameMap = <int, String>{};
 
-  Future _resolveOids(
-      PostgreSQLExecutionContext c, List<FieldDescription> columns) async {
+  Future<List<PostgreSQLResultColumn>> _resolveOids(
+      PostgreSQLExecutionContext c,
+      List<PostgreSQLResultColumn> columns) async {
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
@@ -345,9 +346,9 @@ class _OIDCache {
       await _resolveTableOIDs(c, unresolvedTableOIDs);
     }
 
-    columns.forEach((desc) {
-      desc.resolvedTableName = _tableOIDNameMap[desc.tableID];
-    });
+    return columns
+        .map((c) => c.change(resolvedTableName: _tableOIDNameMap[c.tableID]))
+        .toList();
   }
 
   Future _resolveTableOIDs(PostgreSQLExecutionContext c, List<int> oids) async {
@@ -377,7 +378,7 @@ abstract class _PostgreSQLExecutionContextMixin
   int get queueSize => _queue.length;
 
   @override
-  Future<PostgreSQLQueryResult> query(String fmtString,
+  Future<PostgreSQLResult> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse = true,
       int timeoutInSeconds}) async {
@@ -394,13 +395,12 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    final metaData =
-        PostgreSQLQueryMetaData(fieldDescriptions: query.fieldDescriptions);
-    await _connection._oidCache
-        ._resolveOids(this, metaData.fieldDescriptions);
-    return PostgreSQLQueryResult(
+    final columns =
+        await _connection._oidCache._resolveOids(this, query.resultColumns);
+    final metaData = PostgreSQLResultMetaData(columns: columns);
+    return PostgreSQLResult(
       metaData,
-      rows.map((cols) => PostgreSQLRow(metaData, cols)).toList(),
+      rows.map((cols) => PostgreSQLResultRow(metaData, cols)).toList(),
     );
   }
 

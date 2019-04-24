@@ -101,15 +101,15 @@ class BackendKeyMessage extends ServerMessage {
 }
 
 class RowDescriptionMessage extends ServerMessage {
-  final fieldDescriptions = <FieldDescription>[];
+  final columns = <PostgreSQLResultColumn>[];
 
   RowDescriptionMessage(Uint8List bytes) {
     final reader = ByteDataReader()..add(bytes);
-    final fieldCount = reader.readInt16();
+    final count = reader.readInt16();
 
-    for (var i = 0; i < fieldCount; i++) {
-      final rowDesc = FieldDescription.read(reader);
-      fieldDescriptions.add(rowDesc);
+    for (var i = 0; i < count; i++) {
+      final rowDesc = PostgreSQLResultColumn.read(reader);
+      columns.add(rowDesc);
     }
   }
 }

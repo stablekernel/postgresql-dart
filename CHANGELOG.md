@@ -8,7 +8,12 @@
 - Optimized byte buffer parsing and construction with `package:buffer`.
 - Hardened codebase with `package:pedantic` and additional lints.
 - Updated codebase to Dart 2.2.
-- `query` returns `PostgreSQLQueryResult` and `PostgreSQLRow`.
+- `query` returns `PostgreSQLResult` and `PostgreSQLResultRow`.
+
+**Behaviour change**
+
+- Table OIDs are resolved for all query (not only mapped ones), but OID cache
+  is now at connection-level (was: per-transaction).
 
 ## 1.0.2
 - Add connection queue size

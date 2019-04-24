@@ -276,7 +276,7 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     } else if (message is CommandCompleteMessage) {
       rowsAffected = message.rowsAffected;
     } else if (message is RowDescriptionMessage) {
-      query.fieldDescriptions = message.fieldDescriptions;
+      query.resultColumns = message.columns;
     } else if (message is DataRowMessage) {
       query.addRow(message.values);
     } else if (message is ParameterDescriptionMessage) {

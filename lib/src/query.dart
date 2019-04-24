@@ -39,11 +39,11 @@ class Query<T> {
   CachedQuery cache;
 
   final _onComplete = Completer<T>.sync();
-  List<FieldDescription> _fieldDescriptions;
+  List<PostgreSQLResultColumn> _fieldDescriptions;
 
-  List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
+  List<PostgreSQLResultColumn> get resultColumns => _fieldDescriptions;
 
-  set fieldDescriptions(List<FieldDescription> fds) {
+  set resultColumns(List<PostgreSQLResultColumn> fds) {
     _fieldDescriptions = fds;
     cache?.fieldDescriptions = fds;
   }
@@ -58,7 +58,7 @@ class Query<T> {
 
   void sendExtended(Socket socket, {CachedQuery cacheQuery}) {
     if (cacheQuery != null) {
-      fieldDescriptions = cacheQuery.fieldDescriptions;
+      resultColumns = cacheQuery.fieldDescriptions;
       sendCachedQuery(socket, cacheQuery, substitutionValues);
 
       return;
@@ -139,7 +139,7 @@ class Query<T> {
       return;
     }
 
-    final iterator = fieldDescriptions.iterator;
+    final iterator = resultColumns.iterator;
     final lazyDecodedData = rawRowData.map((bd) {
       iterator.moveNext();
       return iterator.current.converter.convert(bd);
@@ -178,7 +178,7 @@ class CachedQuery {
 
   final String preparedStatementName;
   final List<PostgreSQLFormatIdentifier> orderedParameters;
-  List<FieldDescription> fieldDescriptions;
+  List<PostgreSQLResultColumn> fieldDescriptions;
 
   bool get isValid {
     return preparedStatementName != null &&
@@ -223,30 +223,32 @@ class ParameterValue {
   final int length;
 }
 
-class FieldDescription {
-  final Converter converter;
+class PostgreSQLResultColumn {
+  final String name;
 
-  final String fieldName;
   final int tableID;
   final int columnID;
   final int typeID;
   final int dataTypeSize;
   final int typeModifier;
   final int formatCode;
+  final Converter converter;
 
-  String resolvedTableName;
+  final String resolvedTableName;
 
-  FieldDescription._(
-      this.converter,
-      this.fieldName,
-      this.tableID,
-      this.columnID,
-      this.typeID,
-      this.dataTypeSize,
-      this.typeModifier,
-      this.formatCode);
+  PostgreSQLResultColumn._(
+    this.converter,
+    this.name,
+    this.tableID,
+    this.columnID,
+    this.typeID,
+    this.dataTypeSize,
+    this.typeModifier,
+    this.formatCode,
+    this.resolvedTableName,
+  );
 
-  factory FieldDescription.read(ByteDataReader reader) {
+  factory PostgreSQLResultColumn.read(ByteDataReader reader) {
     final buf = StringBuffer();
     int byte = 0;
     do {
@@ -256,7 +258,7 @@ class FieldDescription {
       }
     } while (byte != 0);
 
-    final fieldName = buf.toString();
+    final name = buf.toString();
 
     final tableID = reader.readUint32();
     final columnID = reader.readUint16();
@@ -266,13 +268,40 @@ class FieldDescription {
     final formatCode = reader.readUint16();
 
     final converter = PostgresBinaryDecoder(typeID);
-    return FieldDescription._(converter, fieldName, tableID, columnID, typeID,
-        dataTypeSize, typeModifier, formatCode);
+    return PostgreSQLResultColumn._(
+      converter,
+      name,
+      tableID,
+      columnID,
+      typeID,
+      dataTypeSize,
+      typeModifier,
+      formatCode,
+      null,
+    );
+  }
+
+  PostgreSQLResultColumn change({String resolvedTableName}) {
+    // Don't create a new object if not needed.
+    if (this.resolvedTableName == resolvedTableName) {
+      return this;
+    }
+    return PostgreSQLResultColumn._(
+      converter,
+      name,
+      tableID,
+      columnID,
+      typeID,
+      dataTypeSize,
+      typeModifier,
+      formatCode,
+      resolvedTableName ?? this.resolvedTableName,
+    );
   }
 
   @override
   String toString() {
-    return '$fieldName $tableID $columnID $typeID $dataTypeSize $typeModifier $formatCode';
+    return '$name $tableID $columnID $typeID $dataTypeSize $typeModifier $formatCode';
   }
 }
 
