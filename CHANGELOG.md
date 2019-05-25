@@ -10,6 +10,7 @@
 - Updated codebase to Dart 2.2.
 - `PostgreSQLResult` and `PostgreSQLResultRow` as the return value of a query.
   - Returned lists are protected with `UnmodifiableListView`. 
+- Connection-level table OID cache.
 
 ## 1.0.2
 - Add connection queue size
