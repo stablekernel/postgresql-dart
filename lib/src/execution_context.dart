@@ -95,4 +95,6 @@ abstract class PostgreSQLResultRow implements List {}
 /// The query result.
 ///
 /// Rows can be accessed through the [] [List] accessor.
-abstract class PostgreSQLResult implements List<PostgreSQLResultRow> {}
+abstract class PostgreSQLResult implements List<PostgreSQLResultRow> {
+  List<FieldDescription> get columnDescriptions;
+}
