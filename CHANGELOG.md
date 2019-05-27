@@ -12,7 +12,10 @@
   - Returned lists are protected with `UnmodifiableListView`. 
 - `PostgreSQLConnection` and `_TransactionProxy` share the OID cache.
 - default value for `query(allowReuse = true)` is set only in the implementation method.
-- Table OIDs are always resolved to table names.
+
+**Breaking behaviour**
+
+- Table OIDs are always resolved to table names (and not only with mapped queries).
 
 ## 1.0.2
 - Add connection queue size
