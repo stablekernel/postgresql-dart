@@ -331,6 +331,7 @@ class _OidCache {
 
   Future _resolveTableNames(_PostgreSQLExecutionContextMixin c,
       List<FieldDescription> columns) async {
+    if (columns == null) return;
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
