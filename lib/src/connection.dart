@@ -328,6 +328,14 @@ class Notification {
 
 class _OidCache {
   final _tableOIDNameMap = <int, String>{};
+  int _queryCount = 0;
+
+  int get queryCount => _queryCount;
+
+  void clear() {
+    _queryCount = 0;
+    _tableOIDNameMap.clear();
+  }
 
   Future _resolveTableNames(_PostgreSQLExecutionContextMixin c,
       List<FieldDescription> columns) async {
@@ -354,6 +362,7 @@ class _OidCache {
 
   Future _resolveTableOIDs(
       _PostgreSQLExecutionContextMixin c, List<int> oids) async {
+    _queryCount++;
     final unresolvedIDString = oids.join(',');
     final orderedTableNames = await c._query(
       "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC",
