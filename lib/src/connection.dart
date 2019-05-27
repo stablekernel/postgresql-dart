@@ -366,6 +366,7 @@ class _OidCache {
     final unresolvedIDString = oids.join(',');
     final orderedTableNames = await c._query(
       "SELECT relname FROM pg_class WHERE relkind='r' AND oid IN ($unresolvedIDString) ORDER BY oid ASC",
+      allowReuse: false, // inlined OIDs would make it difficult anyway
       resolveOids: false,
     );
 
