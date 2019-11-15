@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.0.0
+
+- Finalized dev release.
+
 ## 2.0.0-dev1.0
 
 - Restricted field access on [PostgreSQLConnection].
