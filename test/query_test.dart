@@ -365,21 +365,13 @@ void main() {
         () async {
       final rs1 = await connection
           .query('SELECT *  FROM (VALUES (\'user@domain.com\')) t1 (col1)');
-      expect(rs1.first.toTableColumnMap(), {
-        't1': {
-          'col1': 'user@domain.com',
-        },
-      });
+      expect(rs1.first.toColumnMap(), {'col1': 'user@domain.com'});
 
       final rs2 = await connection.query(
         'SELECT *  FROM (VALUES (\'user@domain.com\')) t1 (col1) WHERE col1 > @u1',
         substitutionValues: {'u1': 'hello@domain.com'},
       );
-      expect(rs2.first.toTableColumnMap(), {
-        't1': {
-          'col1': 'user@domain.com',
-        },
-      });
+      expect(rs2.first.toColumnMap(), {'col1': 'user@domain.com'});
     });
 
     test('Wrong type for parameter in substitution values fails', () async {
