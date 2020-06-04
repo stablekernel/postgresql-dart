@@ -53,6 +53,23 @@ await connection.transaction((ctx) async {
 });
 ```
 
+Execute query to retrieve ByteArray type:
+
+```dart
+import 'dart:typed_data'; // required for Uint8List
+
+Future<List<Uint8List>> GetByteArray(final int Id) async {
+    var connection = new PostgreSQLConnection(...); // replace with your credentials
+    await connection.open();
+    var sqlQuery = "SELECT data FROM table WHERE id = @Id";
+    List<dynamic> results = await connection.query(sqlQuery, substitutionValues: {
+        "Id" : id
+    });
+
+    return results;
+}
+```
+
 See the API documentation: https://www.dartdocs.org/documentation/postgres/latest.
 
 ## Development branch
