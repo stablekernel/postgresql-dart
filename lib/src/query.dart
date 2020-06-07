@@ -315,7 +315,9 @@ class PostgreSQLFormatIdentifier {
     'jsonb': PostgreSQLDataType.json,
     'bytea': PostgreSQLDataType.byteArray,
     'name': PostgreSQLDataType.name,
-    'uuid': PostgreSQLDataType.uuid
+    'uuid': PostgreSQLDataType.uuid,
+    'geometry': PostgreSQLDataType.geometry,
+    'geography': PostgreSQLDataType.geometry
   };
 
   factory PostgreSQLFormatIdentifier(String t) {
