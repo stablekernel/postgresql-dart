@@ -38,8 +38,6 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
     if (value == null) {
       return null;
     }
-  
-
 
     switch (_dataType) {
       case PostgreSQLDataType.boolean:
@@ -201,12 +199,14 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
           }
           return outBuffer;
         }
-        case PostgreSQLDataType.geometry:
-          {
-            if(value is Geometry) {
-              return castBytes(utf8.encode(value.toText()));  //TODO: Convert to Uint8List. Need help here. Using toText() in raw sql inserts it well.
-            }
+      case PostgreSQLDataType.geometry:
+        {
+          if (value is Geometry) {
+            return castBytes(utf8.encode(
+              value.toText(),
+            ),); //TODO: Convert to Uint8List. Need help here. Using toText() in raw sql inserts it well.
           }
+        }
     }
 
     throw PostgreSQLException('Unsupported datatype');
@@ -315,7 +315,9 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     1184: PostgreSQLDataType.timestampWithTimezone,
     2950: PostgreSQLDataType.uuid,
     3802: PostgreSQLDataType.json,
-    31683: PostgreSQLDataType.geometry,   //TODO: Changes on different databases. Is there a workaround for this?
-    32339: PostgreSQLDataType.geometry    // Obtained the oid's from SELECT oid, typarray FROM pg_type WHERE typname = 'geometry';
+    31683: PostgreSQLDataType
+        .geometry, //TODO: Changes on different databases. Is there a workaround for this?
+    32339: PostgreSQLDataType
+        .geometry // Obtained the oid's from SELECT oid, typarray FROM pg_type WHERE typname = 'geometry';
   };
 }
