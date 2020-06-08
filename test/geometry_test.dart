@@ -32,19 +32,22 @@ const String multiInsert = '''
   ''';
 
 /// Before running this tests, RUN `SELECT oid, typname FROM pg_type WHERE typname in ('geometry','geography');` AND change the id of `typeMap` in `PostgresBinaryDecoder` to the returned oid.
-/// after running `CREATE EXTENSION posgis` in the database
+/// after running `CREATE EXTENSION postgis` in the database
 /// WorkAround for this needed
 
 void main() {
   PostgreSQLConnection connection;
 
   final geomFactory = GeometryFactory.withCoordinateSequenceFactory(
-      PackedCoordinateSequenceFactory.withType(
-          PackedCoordinateSequenceFactory.DOUBLE));
+    PackedCoordinateSequenceFactory.withType(
+      PackedCoordinateSequenceFactory.DOUBLE,
+    ),
+  );
+
   final rdr = WKTReader.withFactory(geomFactory);
 
   setUp(() async {
-    connection = PostgreSQLConnection('localhost', 5432, 'alaska',
+    connection = PostgreSQLConnection('localhost', 5432, 'test',
         username: 'dart', password: 'dart');
     await connection.open();
 
