@@ -11,6 +11,8 @@ abstract class PostgisGeometryParser {
   MultiPolygon parseMultiPolygon(List<int> ewkt);
   GeometryCollection parseGeometryCollection(List<int> ewkt);
   MultiLineString readMultiCurve(List<int> ewkt);
+
+  LinearRing parseLinearRing(List<int> ewkt);
 }
 
 
@@ -119,6 +121,16 @@ class PostgisEWKTParser extends PostgisGeometryParser {
       return multiCurve;
     } else {
       throw EwkbFormatException('$ewkt is not valid MultiPoint. Ensure your format is EWKB & is a MultiPoint');
+    }
+  }
+
+  @override
+  LinearRing parseLinearRing(List<int> ewkt) {
+    final linearRing = wkbReader.read(ewkt);
+    if (linearRing is LinearRing) {
+      return linearRing;
+    } else {
+      throw EwkbFormatException('$ewkt is not valid LinearRing');
     }
   }
 }
