@@ -206,7 +206,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
               utf8.encode(
                 value.toText(),
               ),
-            ); //TODO: Convert to Uint8List. Need help here. Using toText() in raw sql inserts it well.
+            ); ///TODO: Is this neccessary since I've added it to `PostgresTextEncoder`
           }
         }
     }

@@ -37,6 +37,10 @@ class PostgresTextEncoder extends Converter<dynamic, String> {
       return encodeJSON(value);
     }
 
+    if (value is Geometry) {
+      return value.toText();
+    }
+
     throw PostgreSQLException("Could not infer type of value '$value'.");
   }
 
