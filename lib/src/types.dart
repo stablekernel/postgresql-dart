@@ -67,6 +67,6 @@ enum PostgreSQLDataType {
   uuid,
 
   /// Must be a [List] of [int] currently in Ewkb(Extended Well-Known Binary) format
-  /// 
+  /// (https://postgis.net/docs/using_postgis_dbmanagement.html#OpenGISWKBWKT)
   geometry
 }
