@@ -112,6 +112,8 @@ class PostgreSQLConnection extends Object
   int _secretKey;
   List<int> _salt;
 
+  final Map<String,int> _extraDataTypes = {};
+
   bool _hasConnectedPreviously = false;
   _PostgreSQLConnectionState _connectionState;
 
@@ -129,7 +131,7 @@ class PostgreSQLConnection extends Object
   ///
   /// Connections may not be reopened after they are closed or opened more than once. If a connection has already been
   /// opened and this method is called, an exception will be thrown.
-  Future open() async {
+  Future open({bool enablePostGISSupport=false}) async {
     if (_hasConnectedPreviously) {
       throw PostgreSQLException(
           'Attempting to reopen a closed connection. Create a instance instead.');
@@ -163,6 +165,26 @@ class PostgreSQLConnection extends Object
 
       rethrow;
     }
+
+    if (enablePostGISSupport) {
+
+      // fetch oids from database (dynamic values)
+      final dataTypes = await _connection._query(
+        'SELECT oid::int,typname::text from pg_type where typname =\'geometry\' or typname = \'geography\'',
+        substitutionValues: {'newtypes': '(\'geometry\',\'geography\')'},
+      );
+
+      
+      final mapped = dataTypes.map((row) {
+        final oid = row[0] as int;
+        final typname = row[1] as String;
+        return MapEntry<String,int>(typname,oid);
+      });
+      _extraDataTypes.addEntries(mapped);
+    }
+
+    print(_extraDataTypes);
+
   }
 
   /// Closes a connection.

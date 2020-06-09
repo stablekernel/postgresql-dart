@@ -66,7 +66,7 @@ enum PostgreSQLDataType {
   /// When returned from database, format will be xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx.
   uuid,
 
-  /// Must be a [List] of [int] currently in Ewkb(Extended Well-Known Binary) format
+  /// Must be a [List] of [int] currently in Ewkb(Extended Well-Known Binary) format (https://postgis.net/docs/using_postgis_dbmanagement.html)
   /// 
   geometry
 }
