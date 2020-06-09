@@ -202,9 +202,11 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
       case PostgreSQLDataType.geometry:
         {
           if (value is Geometry) {
-            return castBytes(utf8.encode(
-              value.toText(),
-            ),); //TODO: Convert to Uint8List. Need help here. Using toText() in raw sql inserts it well.
+            return castBytes(
+              utf8.encode(
+                value.toText(),
+              ),
+            ); //TODO: Convert to Uint8List. Need help here. Using toText() in raw sql inserts it well.
           }
         }
     }
@@ -286,7 +288,16 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
           return buf.toString();
         }
       case PostgreSQLDataType.geometry:
-        return PostgisEWKTParser().parseGeometry(value);
+        {
+          final wkbReader =
+              WKBReader(); // postgis geometries are stored as Well Known Binaries (https://postgis.net/docs/using_postgis_dbmanagement.html)
+          final geometry = wkbReader.read(value);
+          if (geometry is Geometry) {
+            return geometry;
+          } else {
+            throw PostgreSQLException('Error parsing geometry');
+          }
+        }
     }
 
     // We'll try and decode this as a utf8 string and return that
@@ -315,9 +326,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     1184: PostgreSQLDataType.timestampWithTimezone,
     2950: PostgreSQLDataType.uuid,
     3802: PostgreSQLDataType.json,
-    31683: PostgreSQLDataType
-        .geometry, //TODO: Changes on different databases. Is there a workaround for this?
-    32339: PostgreSQLDataType
-        .geometry // Obtained the oid's from SELECT oid, typarray FROM pg_type WHERE typname = 'geometry';
+    46315: PostgreSQLDataType.geometry, /// TODO: Oid Changes on different databases after running `CREATE EXTENSION postgis`
+    46971: PostgreSQLDataType.geometry  /// `SELECT oid, typarray FROM pg_type WHERE typname in ('geometry','geography')`;
   };
 }
