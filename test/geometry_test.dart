@@ -1,5 +1,6 @@
 import 'package:postgres/postgres.dart';
 import 'package:test/test.dart';
+import 'package:dart_jts/dart_jts.dart';
 
 const String WKT_POINT = 'POINT ( 10 10)';
 
@@ -47,7 +48,7 @@ void main() {
   final rdr = WKTReader.withFactory(geomFactory);
 
   setUp(() async {
-    connection = PostgreSQLConnection('localhost', 5432, 'test',
+    connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
         username: 'dart', password: 'dart');
     await connection.open();
 
