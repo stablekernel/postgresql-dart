@@ -18,11 +18,14 @@ class Query<T> {
     this.statement,
     this.substitutionValues,
     this.connection,
-    this.transaction, {
+    this.transaction, 
+    this.typeMap,
+    {
     this.onlyReturnAffectedRowCount = false,
   });
 
   final bool onlyReturnAffectedRowCount;
+  final Map<int,PostgreSQLDataType> typeMap;
 
   String statementIdentifier;
 
@@ -121,8 +124,7 @@ class Query<T> {
         return true;
       }
 
-      final actualType = PostgresBinaryDecoder
-          .typeMap[actualParameterTypeCodeIterator.current];
+      final actualType = typeMap[actualParameterTypeCodeIterator.current];
       return actualType == specifiedType;
     }).any((v) => v == false);
 

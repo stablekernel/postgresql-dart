@@ -219,6 +219,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
   const PostgresBinaryDecoder(this.typeCode);
 
   final int typeCode;
+  // final Map<int,PostgreSQLDataType> typeMap;
 
   @override
   dynamic convert(Uint8List value) {
@@ -311,22 +312,22 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     }
   }
 
-  static final Map<int, PostgreSQLDataType> typeMap = {
-    16: PostgreSQLDataType.boolean,
-    17: PostgreSQLDataType.byteArray,
-    19: PostgreSQLDataType.name,
-    20: PostgreSQLDataType.bigInteger,
-    21: PostgreSQLDataType.smallInteger,
-    23: PostgreSQLDataType.integer,
-    25: PostgreSQLDataType.text,
-    700: PostgreSQLDataType.real,
-    701: PostgreSQLDataType.double,
-    1082: PostgreSQLDataType.date,
-    1114: PostgreSQLDataType.timestampWithoutTimezone,
-    1184: PostgreSQLDataType.timestampWithTimezone,
-    2950: PostgreSQLDataType.uuid,
-    3802: PostgreSQLDataType.json,
-    46315: PostgreSQLDataType.geometry, /// TODO: Oid Changes on different databases after running `CREATE EXTENSION postgis`
-    46971: PostgreSQLDataType.geometry  /// `SELECT oid, typarray FROM pg_type WHERE typname in ('geometry','geography')`;
-  };
+  // static final Map<int, PostgreSQLDataType> typeMap = {
+  //   16: PostgreSQLDataType.boolean,
+  //   17: PostgreSQLDataType.byteArray,
+  //   19: PostgreSQLDataType.name,
+  //   20: PostgreSQLDataType.bigInteger,
+  //   21: PostgreSQLDataType.smallInteger,
+  //   23: PostgreSQLDataType.integer,
+  //   25: PostgreSQLDataType.text,
+  //   700: PostgreSQLDataType.real,
+  //   701: PostgreSQLDataType.double,
+  //   1082: PostgreSQLDataType.date,
+  //   1114: PostgreSQLDataType.timestampWithoutTimezone,
+  //   1184: PostgreSQLDataType.timestampWithTimezone,
+  //   2950: PostgreSQLDataType.uuid,
+  //   3802: PostgreSQLDataType.json,
+  //   46315: PostgreSQLDataType.geometry, /// TODO: Oid Changes on different databases after running `CREATE EXTENSION postgis`
+  //   46971: PostgreSQLDataType.geometry  /// `SELECT oid, typarray FROM pg_type WHERE typname in ('geometry','geography')`;
+  // };
 }

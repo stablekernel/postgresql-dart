@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
+import 'package:postgres/postgres.dart';
 
 import 'client_messages.dart';
 import 'execution_context.dart';
@@ -166,12 +167,31 @@ class PostgreSQLConnection extends Object
       rethrow;
     }
 
-    if (enablePostGISSupport) {
+      typeMap = {
+        16: PostgreSQLDataType.boolean,
+        17: PostgreSQLDataType.byteArray,
+        19: PostgreSQLDataType.name,
+        20: PostgreSQLDataType.bigInteger,
+        21: PostgreSQLDataType.smallInteger,
+        23: PostgreSQLDataType.integer,
+        25: PostgreSQLDataType.text,
+        700: PostgreSQLDataType.real,
+        701: PostgreSQLDataType.double,
+        1082: PostgreSQLDataType.date,
+        1114: PostgreSQLDataType.timestampWithoutTimezone,
+        1184: PostgreSQLDataType.timestampWithTimezone,
+        2950: PostgreSQLDataType.uuid,
+        3802: PostgreSQLDataType.json,
+      };
 
+    // if (enablePostGISSupport) {
+      
       // fetch oids from database (dynamic values)
       final dataTypes = await _connection._query(
-        'SELECT oid::int,typname::text from pg_type where typname =\'geometry\' or typname = \'geography\'',
-        substitutionValues: {'newtypes': '(\'geometry\',\'geography\')'},
+        '''
+        select oid::int,typname from pg_type where typname in ('text','int2','int4','int8','float4','float8','bool','date','bytea', 'timestamp','timestamptz','jsonb','name','uuid','geometry', 'geography');
+        ''',
+        // substitutionValues: {'newtypes': '(\'geometry\',\'geography\')'},
       );
 
       
@@ -181,10 +201,20 @@ class PostgreSQLConnection extends Object
         return MapEntry<String,int>(typname,oid);
       });
       _extraDataTypes.addEntries(mapped);
-    }
+    // }
 
-    print(_extraDataTypes);
+    typeMap = _extraDataTypes.map((key, value) {
+      if(key == 'bool') {
+        return MapEntry<int,PostgreSQLDataType>(value,PostgreSQLFormatIdentifier.typeStringToCodeMap['boolean']);
+      }
+      return MapEntry<int,PostgreSQLDataType>(value,PostgreSQLFormatIdentifier.typeStringToCodeMap[key]);
+    });
+    
+    // add boolean since it's not called boolean but bool
 
+    
+    print(typeMap);
+    
   }
 
   /// Closes a connection.
@@ -447,7 +477,7 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final query = Query<List<List<dynamic>>>(
-        fmtString, substitutionValues, _connection, _transaction);
+        fmtString, substitutionValues, _connection, _transaction,typeMap);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
     }
@@ -492,7 +522,7 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final query = Query<int>(
-        fmtString, substitutionValues, _connection, _transaction,
+        fmtString, substitutionValues, _connection, _transaction,typeMap,
         onlyReturnAffectedRowCount: true);
 
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);

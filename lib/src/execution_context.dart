@@ -6,6 +6,12 @@ import 'substituter.dart';
 import 'types.dart';
 
 abstract class PostgreSQLExecutionContext {
+
+  // final Map<int,PostgreSQLDataType> typeMap;
+
+  // PostgreSQLExecutionContext(this.typeMap);
+
+
   /// Returns this context queue size
   int get queueSize;
 

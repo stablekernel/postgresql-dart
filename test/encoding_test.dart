@@ -413,7 +413,7 @@ Future expectInverse(dynamic value, PostgreSQLDataType dataType) async {
     dataType = PostgreSQLDataType.bigInteger;
   }
   int code;
-  PostgresBinaryDecoder.typeMap.forEach((key, type) {
+  typeMap.forEach((key, type) {
     if (type == dataType) {
       code = key;
     }

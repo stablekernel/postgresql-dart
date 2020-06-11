@@ -50,7 +50,7 @@ void main() {
   setUp(() async {
     connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
         username: 'dart', password: 'dart');
-    await connection.open();
+    await connection.open(enablePostGISSupport: true);
 
     await connection.execute('''
         DROP TABLE IF EXISTS test;
