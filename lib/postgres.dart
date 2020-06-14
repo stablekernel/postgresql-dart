@@ -9,4 +9,4 @@ export 'src/substituter.dart';
 export 'src/types.dart';
 
 
-Map<int, PostgreSQLDataType> typeMap;
+Map<int, PostgreSQLDataType> typeMap = {};

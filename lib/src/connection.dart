@@ -113,7 +113,7 @@ class PostgreSQLConnection extends Object
   int _secretKey;
   List<int> _salt;
 
-  final Map<String,int> _extraDataTypes = {};
+  final Map<String, int> _extraDataTypes = {};
 
   bool _hasConnectedPreviously = false;
   _PostgreSQLConnectionState _connectionState;
@@ -132,7 +132,7 @@ class PostgreSQLConnection extends Object
   ///
   /// Connections may not be reopened after they are closed or opened more than once. If a connection has already been
   /// opened and this method is called, an exception will be thrown.
-  Future open({bool enablePostGISSupport=false}) async {
+  Future open({bool enablePostGISSupport = false}) async {
     if (_hasConnectedPreviously) {
       throw PostgreSQLException(
           'Attempting to reopen a closed connection. Create a instance instead.');
@@ -167,54 +167,65 @@ class PostgreSQLConnection extends Object
       rethrow;
     }
 
-      typeMap = {
-        16: PostgreSQLDataType.boolean,
-        17: PostgreSQLDataType.byteArray,
-        19: PostgreSQLDataType.name,
-        20: PostgreSQLDataType.bigInteger,
-        21: PostgreSQLDataType.smallInteger,
-        23: PostgreSQLDataType.integer,
-        25: PostgreSQLDataType.text,
-        700: PostgreSQLDataType.real,
-        701: PostgreSQLDataType.double,
-        1082: PostgreSQLDataType.date,
-        1114: PostgreSQLDataType.timestampWithoutTimezone,
-        1184: PostgreSQLDataType.timestampWithTimezone,
-        2950: PostgreSQLDataType.uuid,
-        3802: PostgreSQLDataType.json,
-      };
+    if(enablePostGISSupport) {
+      //CREATE EXTENSION postgis;
+      try {
+        await _connection.execute('CREATE EXTENSION postgis');
+      } catch (e,st) {
+        await _close(e, st);
+        rethrow;
+      }
+    }
+
+    await _updateIDS();
+  }
+
+  Future updateIDS() => _updateIDS();
+
+  Future _updateIDS() async {
+    typeMap = typeMap.isNotEmpty ? typeMap : {
+      16: PostgreSQLDataType.boolean,
+      17: PostgreSQLDataType.byteArray,
+      19: PostgreSQLDataType.name,
+      20: PostgreSQLDataType.bigInteger,
+      21: PostgreSQLDataType.smallInteger,
+      23: PostgreSQLDataType.integer,
+      25: PostgreSQLDataType.text,
+      700: PostgreSQLDataType.real,
+      701: PostgreSQLDataType.double,
+      1082: PostgreSQLDataType.date,
+      1114: PostgreSQLDataType.timestampWithoutTimezone,
+      1184: PostgreSQLDataType.timestampWithTimezone,
+      2950: PostgreSQLDataType.uuid,
+      3802: PostgreSQLDataType.json,
+    };
 
     // if (enablePostGISSupport) {
-      
-      // fetch oids from database (dynamic values)
-      final dataTypes = await _connection._query(
-        '''
+
+    // fetch oids from database (dynamic values)
+    final dataTypes = await _connection._query(
+      '''
         select oid::int,typname from pg_type where typname in ('text','int2','int4','int8','float4','float8','bool','date','bytea', 'timestamp','timestamptz','jsonb','name','uuid','geometry', 'geography');
         ''',
-        // substitutionValues: {'newtypes': '(\'geometry\',\'geography\')'},
-      );
+    );
 
-      
-      final mapped = dataTypes.map((row) {
-        final oid = row[0] as int;
-        final typname = row[1] as String;
-        return MapEntry<String,int>(typname,oid);
-      });
-      _extraDataTypes.addEntries(mapped);
+    final mapped = dataTypes.map((row) {
+      final oid = row[0] as int;
+      final typname = row[1] as String;
+      return MapEntry<String, int>(typname, oid);
+    });
+    _extraDataTypes.addEntries(mapped);
     // }
 
     typeMap = _extraDataTypes.map((key, value) {
-      if(key == 'bool') {
-        return MapEntry<int,PostgreSQLDataType>(value,PostgreSQLFormatIdentifier.typeStringToCodeMap['boolean']);
+      // add boolean since it's not called bool on pg_types
+      if (key == 'bool') {
+        return MapEntry<int, PostgreSQLDataType>(
+            value, PostgreSQLFormatIdentifier.typeStringToCodeMap['boolean']);
       }
-      return MapEntry<int,PostgreSQLDataType>(value,PostgreSQLFormatIdentifier.typeStringToCodeMap[key]);
+      return MapEntry<int, PostgreSQLDataType>(
+          value, PostgreSQLFormatIdentifier.typeStringToCodeMap[key]);
     });
-    
-    // add boolean since it's not called boolean but bool
-
-    
-    print(typeMap);
-    
   }
 
   /// Closes a connection.
@@ -477,7 +488,7 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final query = Query<List<List<dynamic>>>(
-        fmtString, substitutionValues, _connection, _transaction,typeMap);
+        fmtString, substitutionValues, _connection, _transaction, typeMap);
     if (allowReuse) {
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
     }
@@ -522,7 +533,7 @@ abstract class _PostgreSQLExecutionContextMixin
     }
 
     final query = Query<int>(
-        fmtString, substitutionValues, _connection, _transaction,typeMap,
+        fmtString, substitutionValues, _connection, _transaction, typeMap,
         onlyReturnAffectedRowCount: true);
 
     return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
