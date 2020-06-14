@@ -170,7 +170,7 @@ class PostgreSQLConnection extends Object
     if(enablePostGISSupport) {
       //CREATE EXTENSION postgis;
       try {
-        await _connection.execute('CREATE EXTENSION postgis');
+        await _connection.execute('CREATE EXTENSION IF NOT EXISTS postgis');
       } catch (e,st) {
         await _close(e, st);
         rethrow;
