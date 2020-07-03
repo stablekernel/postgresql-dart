@@ -63,6 +63,40 @@ void main() {
     await connection?.close();
   });
 
+  test(
+      'Inserting geometries in plain dart objects should be inserted using geometry.toText()',
+      () async {
+    final point = rdr.read(WKT_POINT);
+    final lineString = rdr.read(WKT_LINESTRING);
+    final polygon = rdr.read(WKT_POLY);
+    final multiPoint = rdr.read(WKT_MULTIPOINT);
+    final multiLineString = rdr.read(WKT_MULTILINESTRING);
+    final multiPolygon = rdr.read(WKT_MULTIPOLYGON);
+    final geometryCollection = rdr.read(WKT_GC);
+
+    final result = await connection.query(
+      'INSERT into test(geom) VALUES (@point),(@lineString),(@polygon),(@multiPoint),(@multiPolygon),(@multiLineString),(@geometryCollection) returning geom,geom,geom,geom,geom,geom,geom',
+      substitutionValues: {
+        'point': point,
+        'lineString': lineString,
+        'polygon': polygon,
+        'multiPolygon': multiPolygon,
+        'multiLineString': multiLineString,
+        'multiPoint': multiPoint,
+        'geometryCollection' : geometryCollection
+      },
+    );
+
+    expect(point.equals(result[0][0] as Point), true);
+    expect(lineString.equals(result[1][0] as LineString), true);
+    expect(polygon.equals(result[2][0] as Polygon), true);
+    expect(multiPoint.equals(result[3][0] as MultiPoint), true);
+    expect(multiPolygon.equals(result[4][0] as MultiPolygon), true);
+    expect(multiLineString.equals(result[5][0] as MultiLineString), true);
+    expect(geometryCollection.equals(result[6][0] as GeometryCollection), true);  //TODO: Issue with checking equality on GeometryCollection. 
+    
+  });
+
   test('Can store point and read point as dart_jts.Point', () async {
     final result = await connection.query(
       'INSERT into test(geom) VALUES (@point) returning geom',
