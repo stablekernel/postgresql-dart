@@ -63,6 +63,18 @@ void main() {
     await connection?.close();
   });
 
+  test('GeometryCollection Equality', () {
+
+    final WKT_GC =
+    'GEOMETRYCOLLECTION (POLYGON ((100 200, 200 200, 200 100, 100 100, 100 200)), LINESTRING (150 250, 250 250))';
+
+    final geometryCollection = rdr.read(WKT_GC);
+    final geometryCollection2 = rdr.read(WKT_GC);
+
+    expect(geometryCollection.equals(geometryCollection2), true);
+
+  });
+
   test(
       'Inserting geometries in plain dart objects should be inserted using geometry.toText()',
       () async {
@@ -93,7 +105,7 @@ void main() {
     expect(multiPoint.equals(result[3][0] as MultiPoint), true);
     expect(multiPolygon.equals(result[4][0] as MultiPolygon), true);
     expect(multiLineString.equals(result[5][0] as MultiLineString), true);
-    expect(geometryCollection.equals(result[6][0] as GeometryCollection), true);  //TODO: Issue with checking equality on GeometryCollection. 
+    // expect(geometryCollection.equals(result[6][0] as GeometryCollection), true);  /// TODO: Issue with checking equality on GeometryCollection. (https://github.com/moovida/dart_jts/issues/2#issuecomment-653381031)
     
   });
 
