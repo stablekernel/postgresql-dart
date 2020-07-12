@@ -121,8 +121,7 @@ class Query<T> {
         return true;
       }
 
-      final actualType = PostgresBinaryDecoder
-          .typeMap[actualParameterTypeCodeIterator.current];
+      final actualType = typeMap[actualParameterTypeCodeIterator.current];
       return actualType == specifiedType;
     }).any((v) => v == false);
 

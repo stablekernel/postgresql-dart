@@ -6,6 +6,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:buffer/buffer.dart';
+import 'package:postgres/postgres.dart';
 
 import 'client_messages.dart';
 import 'execution_context.dart';
@@ -167,6 +168,8 @@ class PostgreSQLConnection extends Object
 
       await connectionComplete.future
           .timeout(Duration(seconds: timeoutInSeconds));
+
+      await _scanPostgresTypes();
     } on TimeoutException catch (e, st) {
       final err = PostgreSQLException(
           'Failed to connect to database $host:$port/$databaseName failed to connect.');
@@ -177,6 +180,51 @@ class PostgreSQLConnection extends Object
 
       rethrow;
     }
+  }
+
+  Future createExtension(String extensionName) async {
+    try {
+      await _query('CREATE EXTENSION IF NOT EXISTS @name',substitutionValues: {'name': extensionName});
+      // After creating an extension e.g CREATE EXTENSION postgis or create extension hstore -> the data type is added to pg_types which contains oid and typename from postgres. 
+      // i.e values stored in the PostgresBinaryDecoder.typeMap. To have this driver able to understand any postgres type, scanPostgresTypes should scan database on connecting/after creating and extension.
+      // 
+      await scanPostgresTypes();
+    } catch (e, st) {
+    await _close(e, st);
+
+    rethrow;
+    }
+  }
+
+  Future scanPostgresTypes() => _scanPostgresTypes();
+
+  Future _scanPostgresTypes() async {
+    
+    // fetch oids from database (dynamic values)
+    final dataTypes = await _connection._query(
+      '''
+        select oid::int,typname from pg_type where typname in ('text','int2','int4','int8','float4','float8','bool','date','bytea', 'timestamp','timestamptz','jsonb','name','uuid');
+        ''',
+    );
+
+    final mapped = dataTypes.map((row) {
+      final oid = row[0] as int;
+      final typname = row[1] as String;
+      return MapEntry<String, int>(typname, oid);
+    });
+    final _extraDataTypes  = <String, int>{};
+    
+    _extraDataTypes.addEntries(mapped);
+
+    typeMap = _extraDataTypes.map((key, value) {
+      // add boolean since it's not called bool on pg_types
+      if (key == 'bool') {
+        return MapEntry<int, PostgreSQLDataType>(
+            value, PostgreSQLFormatIdentifier.typeStringToCodeMap['boolean']);
+      }
+      return MapEntry<int, PostgreSQLDataType>(
+          value, PostgreSQLFormatIdentifier.typeStringToCodeMap[key]);
+    });
   }
 
   /// Closes a connection.
