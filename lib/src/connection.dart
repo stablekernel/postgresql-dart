@@ -184,27 +184,28 @@ class PostgreSQLConnection extends Object
 
   Future createExtension(String extensionName) async {
     try {
-      await _query('CREATE EXTENSION IF NOT EXISTS @name',substitutionValues: {'name': extensionName});
-      // After creating an extension e.g CREATE EXTENSION postgis or create extension hstore -> the data type is added to pg_types which contains oid and typename from postgres. 
+      await _query('CREATE EXTENSION IF NOT EXISTS @name',
+          substitutionValues: {'name': extensionName});
+      // After creating an extension e.g CREATE EXTENSION postgis or create extension hstore -> the data type is added to pg_types which contains oid and typename from postgres.
       // i.e values stored in the PostgresBinaryDecoder.typeMap. To have this driver able to understand any postgres type, scanPostgresTypes should scan database on connecting/after creating and extension.
-      // 
+      //
       await scanPostgresTypes();
     } catch (e, st) {
-    await _close(e, st);
+      await _close(e, st);
 
-    rethrow;
+      rethrow;
     }
   }
 
   Future scanPostgresTypes() => _scanPostgresTypes();
 
   Future _scanPostgresTypes() async {
-    
     // fetch oids from database (dynamic values)
-    final dataTypes = await _connection._query(
+    final dataTypes = await _connection.query(
       '''
         select oid::int,typname from pg_type where typname in ('text','int2','int4','int8','float4','float8','bool','date','bytea', 'timestamp','timestamptz','jsonb','name','uuid');
         ''',
+      allowReuse: false,
     );
 
     final mapped = dataTypes.map((row) {
@@ -212,8 +213,8 @@ class PostgreSQLConnection extends Object
       final typname = row[1] as String;
       return MapEntry<String, int>(typname, oid);
     });
-    final _extraDataTypes  = <String, int>{};
-    
+    final _extraDataTypes = <String, int>{};
+
     _extraDataTypes.addEntries(mapped);
 
     typeMap = _extraDataTypes.map((key, value) {
