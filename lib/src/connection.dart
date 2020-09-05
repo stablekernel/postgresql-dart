@@ -444,7 +444,7 @@ abstract class _PostgreSQLExecutionContextMixin
       query.statementIdentifier = _connection._cache.identifierForQuery(query);
     }
 
-    final rows = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+    final queryResult = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
     var columnDescriptions = query.fieldDescriptions;
     if (resolveOids) {
       columnDescriptions = await _connection._oidCache
@@ -453,8 +453,9 @@ abstract class _PostgreSQLExecutionContextMixin
     final metaData = _PostgreSQLResultMetaData(columnDescriptions);
 
     return _PostgreSQLResult(
+        queryResult.rowsAffected,
         metaData,
-        rows
+        queryResult.value
             .map((columns) => _PostgreSQLResultRow(metaData, columns))
             .toList());
   }
@@ -483,17 +484,17 @@ abstract class _PostgreSQLExecutionContextMixin
           'Attempting to execute query, but connection is not open.');
     }
 
-    final query = Query<int>(
+    final query = Query<void>(
         fmtString, substitutionValues, _connection, _transaction,
         onlyReturnAffectedRowCount: true);
 
-    return _enqueue(query, timeoutInSeconds: timeoutInSeconds);
+    return _enqueue(query, timeoutInSeconds: timeoutInSeconds).then((result) => result.rowsAffected);
   }
 
   @override
   void cancelTransaction({String reason});
 
-  Future<T> _enqueue<T>(Query<T> query, {int timeoutInSeconds = 30}) async {
+  Future<QueryResult<T>> _enqueue<T>(Query<T> query, {int timeoutInSeconds = 30}) async {
     if (_queue.add(query)) {
       _connection._transitionToState(_connection._connectionState.awake());
 
@@ -535,9 +536,10 @@ class _PostgreSQLResultMetaData {
 
 class _PostgreSQLResult extends UnmodifiableListView<PostgreSQLResultRow>
     implements PostgreSQLResult {
+  final int rowsAffected;
   final _PostgreSQLResultMetaData _metaData;
 
-  _PostgreSQLResult(this._metaData, List<PostgreSQLResultRow> rows)
+  _PostgreSQLResult(this.rowsAffected, this._metaData, List<PostgreSQLResultRow> rows)
       : super(rows);
 
   @override
