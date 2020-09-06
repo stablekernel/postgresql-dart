@@ -116,6 +116,6 @@ abstract class PostgreSQLResultRow implements List {
 /// Rows can be accessed through the `[]` operator.
 abstract class PostgreSQLResult implements List<PostgreSQLResultRow> {
   /// How many rows did this query affect?
-  int get rowsAffected;
+  int get affectedRowCount;
   List<ColumnDescription> get columnDescriptions;
 }

@@ -453,7 +453,7 @@ abstract class _PostgreSQLExecutionContextMixin
     final metaData = _PostgreSQLResultMetaData(columnDescriptions);
 
     return _PostgreSQLResult(
-        queryResult.rowsAffected,
+        queryResult.affectedRowCount,
         metaData,
         queryResult.value
             .map((columns) => _PostgreSQLResultRow(metaData, columns))
@@ -488,7 +488,7 @@ abstract class _PostgreSQLExecutionContextMixin
         fmtString, substitutionValues, _connection, _transaction,
         onlyReturnAffectedRowCount: true);
 
-    return _enqueue(query, timeoutInSeconds: timeoutInSeconds).then((result) => result.rowsAffected);
+    return _enqueue(query, timeoutInSeconds: timeoutInSeconds).then((result) => result.affectedRowCount);
   }
 
   @override
@@ -536,10 +536,11 @@ class _PostgreSQLResultMetaData {
 
 class _PostgreSQLResult extends UnmodifiableListView<PostgreSQLResultRow>
     implements PostgreSQLResult {
-  final int rowsAffected;
+  @override
+  final int affectedRowCount;
   final _PostgreSQLResultMetaData _metaData;
 
-  _PostgreSQLResult(this.rowsAffected, this._metaData, List<PostgreSQLResultRow> rows)
+  _PostgreSQLResult(this.affectedRowCount, this._metaData, List<PostgreSQLResultRow> rows)
       : super(rows);
 
   @override

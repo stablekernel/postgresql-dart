@@ -174,10 +174,10 @@ class Query<T> {
 }
 
 class QueryResult<T> {
-  final int rowsAffected;
+  final int affectedRowCount;
   final T value;
 
-  const QueryResult(this.rowsAffected, this.value);
+  const QueryResult(this.affectedRowCount, this.value);
 }
 
 class CachedQuery {
