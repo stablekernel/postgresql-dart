@@ -41,7 +41,7 @@ abstract class PostgreSQLExecutionContext {
   /// This method returns the number of rows affected and no additional information. This method uses the least efficient and less secure command
   /// for executing queries in the PostgreSQL protocol; [query] is preferred for queries that will be executed more than once, will contain user input,
   /// or return rows.
-  Future<int> execute(String fmtString,
+  Future<int?> execute(String fmtString,
       {Map<String, dynamic> substitutionValues, int timeoutInSeconds});
 
   /// Cancels a transaction on this context.

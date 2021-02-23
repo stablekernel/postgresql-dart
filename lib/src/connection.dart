@@ -395,7 +395,7 @@ class _OidCache {
     }
 
     final iterator = oids.iterator;
-    orderedTableNames!.forEach((tableName) {
+    orderedTableNames.forEach((tableName) {
       iterator.moveNext();
       if (tableName.first != null) {
         _tableOIDNameMap[iterator.current] = tableName.first as String;
@@ -451,7 +451,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
     final queryResult =
         await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    List<FieldDescription?>? columnDescriptions = query.fieldDescriptions;
+    var columnDescriptions = query.fieldDescriptions;
     if (resolveOids) {
       columnDescriptions = await _connection._oidCache
           ._resolveTableNames(this, columnDescriptions);
@@ -486,7 +486,7 @@ abstract class _PostgreSQLExecutionContextMixin
   }
 
   @override
-  Future<int> execute(String fmtString,
+  Future<int?> execute(String fmtString,
       {Map<String, dynamic> substitutionValues = const {},
       int? timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
