@@ -31,7 +31,7 @@ class QueryQueue extends ListBase<Query<dynamic>>
     // synchronous.
     scheduleMicrotask(() {
       existing.forEach((q) {
-        q.completeError(error!, stackTrace!);
+        q.completeError(error!, stackTrace);
       });
     });
   }

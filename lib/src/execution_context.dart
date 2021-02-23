@@ -80,7 +80,7 @@ abstract class PostgreSQLExecutionContext {
   ///           "company: {"name": "stable|kernel"}
   ///         }
   ///       ]
-  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
+  Future<List<Map<String?, Map<String, dynamic>>>> mappedResultsQuery(
       String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse,

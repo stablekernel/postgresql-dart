@@ -463,7 +463,7 @@ abstract class _PostgreSQLExecutionContextMixin
   }
 
   @override
-  Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
+  Future<List<Map<String?, Map<String, dynamic>>>> mappedResultsQuery(
       String fmtString,
       {Map<String, dynamic> substitutionValues = const {},
       bool allowReuse = false,
