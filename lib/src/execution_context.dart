@@ -29,7 +29,7 @@ abstract class PostgreSQLExecutionContext {
   /// By default, instances of this class will reuse queries. This allows significantly more efficient transport to and from the database. You do not have to do
   /// anything to opt in to this behavior, this connection will track the necessary information required to reuse queries without intervention. (The [fmtString] is
   /// the unique identifier to look up reuse information.) You can disable reuse by passing false for [allowReuse].
-  Future<PostgreSQLResult> query(String fmtString,
+  Future<PostgreSQLResult?> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse,
       int timeoutInSeconds});

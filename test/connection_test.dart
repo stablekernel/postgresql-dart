@@ -445,11 +445,13 @@ void main() {
   });
 
   group('Network error situations', () {
-    late ServerSocket serverSocket;
+    ServerSocket? serverSocket;
     Socket? socket;
 
     tearDown(() async {
-      await serverSocket.close();
+      if (serverSocket != null) {
+        await serverSocket!.close();
+      }
       if (socket != null) {
         await socket!.close();
       }
@@ -491,7 +493,7 @@ void main() {
         () async {
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
-      serverSocket.listen((s) {
+      serverSocket!.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
@@ -515,7 +517,7 @@ void main() {
         () async {
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
-      serverSocket.listen((s) {
+      serverSocket!.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
@@ -539,7 +541,7 @@ void main() {
       final openCompleter = Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
-      serverSocket.listen((s) {
+      serverSocket!.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});
@@ -565,7 +567,7 @@ void main() {
       final openCompleter = Completer();
       serverSocket =
           await ServerSocket.bind(InternetAddress.loopbackIPv4, 5433);
-      serverSocket.listen((s) {
+      serverSocket!.listen((s) {
         socket = s;
         // Don't respond on purpose
         s.listen((bytes) {});

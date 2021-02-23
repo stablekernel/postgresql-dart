@@ -390,8 +390,12 @@ class _OidCache {
       resolveOids: false,
     );
 
+    if (orderedTableNames == null) {
+      return;
+    }
+
     final iterator = oids.iterator;
-    orderedTableNames.forEach((tableName) {
+    orderedTableNames!.forEach((tableName) {
       iterator.moveNext();
       if (tableName.first != null) {
         _tableOIDNameMap[iterator.current] = tableName.first as String;
@@ -412,7 +416,7 @@ abstract class _PostgreSQLExecutionContextMixin
   int get queueSize => _queue.length;
 
   @override
-  Future<PostgreSQLResult> query(
+  Future<PostgreSQLResult?> query(
     String fmtString, {
     Map<String, dynamic> substitutionValues = const {},
     bool allowReuse = false,
@@ -425,7 +429,7 @@ abstract class _PostgreSQLExecutionContextMixin
         timeoutInSeconds: timeoutInSeconds,
       );
 
-  Future<PostgreSQLResult> _query(
+  Future<PostgreSQLResult?> _query(
     String fmtString, {
     Map<String, dynamic> substitutionValues = const {},
     bool allowReuse = true,
@@ -474,6 +478,10 @@ abstract class _PostgreSQLExecutionContextMixin
       allowReuse: allowReuse,
       timeoutInSeconds: timeoutInSeconds,
     );
+
+    if (rs == null) {
+      return Future.value();
+    }
     return rs.map((row) => row.toTableColumnMap()).toList();
   }
 

@@ -39,7 +39,7 @@ void main() {
       expect(result, [expectedRow]);
 
       result = await connection.query('select t from t');
-      expect(result.columnDescriptions, hasLength(1));
+      expect(result!.columnDescriptions, hasLength(1));
       expect(result.columnDescriptions.single!.tableName, 't');
       expect(result.columnDescriptions.single!.columnName, 't');
       expect(result, [expectedRow]);
@@ -155,7 +155,7 @@ void main() {
         {'a': 'b'},
         '01234567-89ab-cdef-0123-0123456789ab'
       ];
-      expect(result.columnDescriptions, hasLength(14));
+      expect(result!.columnDescriptions, hasLength(14));
       expect(result.columnDescriptions.first!.tableName, 't');
       expect(result.columnDescriptions.first!.columnName, 'i');
       expect(result.columnDescriptions.last!.tableName, 't');
@@ -365,13 +365,13 @@ void main() {
         () async {
       final rs1 = await connection
           .query('SELECT *  FROM (VALUES (\'user@domain.com\')) t1 (col1)');
-      expect(rs1.first.toColumnMap(), {'col1': 'user@domain.com'});
+      expect(rs1!.first.toColumnMap(), {'col1': 'user@domain.com'});
 
       final rs2 = await connection.query(
         'SELECT *  FROM (VALUES (\'user@domain.com\')) t1 (col1) WHERE col1 > @u1',
         substitutionValues: {'u1': 'hello@domain.com'},
       );
-      expect(rs2.first.toColumnMap(), {'col1': 'user@domain.com'});
+      expect(rs2!.first.toColumnMap(), {'col1': 'user@domain.com'});
     });
 
     test('Wrong type for parameter in substitution values fails', () async {
