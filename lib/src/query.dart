@@ -161,12 +161,12 @@ class Query<T> {
     _onComplete.complete(QueryResult(rowsAffected, rows as T));
   }
 
-  void completeError(dynamic error, [StackTrace? stackTrace]) {
+  void completeError(Object error, [StackTrace? stackTrace]) {
     if (_onComplete.isCompleted) {
       return;
     }
 
-    _onComplete.completeError(error as Object, stackTrace);
+    _onComplete.completeError(error, stackTrace);
   }
 
   @override

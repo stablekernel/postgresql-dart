@@ -20,7 +20,7 @@ class QueryQueue extends ListBase<Query<dynamic>>
     return _inner.first;
   }
 
-  void cancel([dynamic error, StackTrace? stackTrace]) {
+  void cancel([Object? error, StackTrace? stackTrace]) {
     _isCancelled = true;
     error ??= _cancellationException;
     final existing = _inner;
@@ -31,7 +31,7 @@ class QueryQueue extends ListBase<Query<dynamic>>
     // synchronous.
     scheduleMicrotask(() {
       existing.forEach((q) {
-        q.completeError(error, stackTrace!);
+        q.completeError(error!, stackTrace!);
       });
     });
   }
