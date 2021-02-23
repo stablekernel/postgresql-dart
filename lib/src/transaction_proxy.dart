@@ -13,12 +13,12 @@ class _TransactionProxy extends Object
 
     _beginQuery.future.then(startTransaction).catchError((err, StackTrace st) {
       Future(() {
-        _completer.completeError(err, st);
+        _completer.completeError(err as Object, st);
       });
     });
   }
 
-  Query<dynamic> _beginQuery;
+  late Query<dynamic> _beginQuery;
   final _completer = Completer();
 
   Future get future => _completer.future;
@@ -35,8 +35,8 @@ class _TransactionProxy extends Object
   bool _hasRolledBack = false;
 
   @override
-  void cancelTransaction({String reason}) {
-    throw _TransactionRollbackException(reason);
+  void cancelTransaction({String? reason}) {
+    throw _TransactionRollbackException(reason ?? 'Reason not given.');
   }
 
   Future startTransaction(dynamic _) async {
@@ -70,7 +70,7 @@ class _TransactionProxy extends Object
     }
   }
 
-  Future _cancelAndRollback(dynamic object, [StackTrace trace]) async {
+  Future _cancelAndRollback(dynamic object, [StackTrace? trace]) async {
     if (_hasRolledBack) {
       return;
     }
@@ -87,7 +87,7 @@ class _TransactionProxy extends Object
         'that prevented this query from executing.');
     _queue.cancel(err);
 
-    final rollback = Query<int>('ROLLBACK', {}, _connection, _transaction,
+    final rollback = Query<int>('ROLLBACK', {}, _connection, _transaction!,
         onlyReturnAffectedRowCount: true);
     _queue.addEvenIfCancelled(rollback);
 
@@ -102,11 +102,11 @@ class _TransactionProxy extends Object
     if (object is _TransactionRollbackException) {
       _completer.complete(PostgreSQLRollback._(object.reason));
     } else {
-      _completer.completeError(object, trace);
+      _completer.completeError(object as Object, trace);
     }
   }
 
-  Future _transactionFailed(dynamic error, [StackTrace trace]) async {
+  Future _transactionFailed(dynamic error, [StackTrace? trace]) async {
     if (_hasFailed) {
       return;
     }
@@ -117,7 +117,7 @@ class _TransactionProxy extends Object
   }
 
   @override
-  Future _onQueryError(Query query, dynamic error, [StackTrace trace]) {
+  Future _onQueryError(Query query, dynamic error, [StackTrace? trace]) {
     return _transactionFailed(error, trace);
   }
 }

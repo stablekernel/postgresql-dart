@@ -5,12 +5,12 @@ import 'package:test/test.dart';
 
 void main() {
   group('Successful notifications', () {
-    var connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
-        username: 'dart', password: 'dart');
+    var connection = PostgreSQLConnection('localhost', 'dart_test',
+        port: 5432, username: 'dart', password: 'dart');
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
-          username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 'dart_test',
+          port: 5432, username: 'dart', password: 'dart');
       await connection.open();
     });
 

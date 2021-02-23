@@ -40,8 +40,8 @@ class PostgreSQLConnection extends Object
   /// [useSSL] when true, uses a secure socket when connecting to a PostgreSQL database.
   PostgreSQLConnection(
     this.host,
-    this.port,
     this.databaseName, {
+    this.port = 5432,
     this.username,
     this.password,
     this.timeoutInSeconds = 30,
@@ -67,10 +67,10 @@ class PostgreSQLConnection extends Object
   final String databaseName;
 
   /// Username for authenticating this connection.
-  final String username;
+  final String? username;
 
   /// Password for authenticating this connection.
-  final String password;
+  final String? password;
 
   /// Whether or not this connection should connect securely.
   final bool useSSL;
@@ -113,18 +113,18 @@ class PostgreSQLConnection extends Object
 
   final _cache = QueryCache();
   final _oidCache = _OidCache();
-  Socket _socket;
+  Socket? _socket;
   MessageFramer _framer = MessageFramer();
-  int _processID;
+  late int _processID;
   // ignore: unused_field
-  int _secretKey;
-  List<int> _salt;
+  late int _secretKey;
+  late List<int> _salt;
 
   bool _hasConnectedPreviously = false;
-  _PostgreSQLConnectionState _connectionState;
+  late _PostgreSQLConnectionState _connectionState;
 
   @override
-  PostgreSQLExecutionContext get _transaction => null;
+  PostgreSQLExecutionContext get _transaction => this;
 
   @override
   PostgreSQLConnection get _connection => this;
@@ -156,11 +156,12 @@ class PostgreSQLConnection extends Object
 
       _framer = MessageFramer();
       if (useSSL) {
-        _socket = await _upgradeSocketToSSL(_socket, timeout: timeoutInSeconds);
+        _socket =
+            await _upgradeSocketToSSL(_socket!, timeout: timeoutInSeconds);
       }
 
       final connectionComplete = Completer();
-      _socket.listen(_readData, onError: _close, onDone: _close);
+      _socket!.listen(_readData, onError: _close, onDone: _close);
 
       _transitionToState(
           _PostgreSQLConnectionStateSocketConnected(connectionComplete));
@@ -214,7 +215,7 @@ class PostgreSQLConnection extends Object
   /// default query timeout will be used.
   Future transaction(
     Future Function(PostgreSQLExecutionContext connection) queryBlock, {
-    int commitTimeoutInSeconds,
+    int commitTimeoutInSeconds = 0,
   }) async {
     if (isClosed) {
       throw PostgreSQLException(
@@ -229,7 +230,7 @@ class PostgreSQLConnection extends Object
   }
 
   @override
-  void cancelTransaction({String reason}) {
+  void cancelTransaction({String? reason}) {
     // Default is no-op
   }
 
@@ -249,13 +250,15 @@ class PostgreSQLConnection extends Object
     _connectionState.connection = this;
   }
 
-  Future _close([dynamic error, StackTrace trace]) async {
+  Future _close([dynamic error, StackTrace? trace]) async {
     _connectionState = _PostgreSQLConnectionStateClosed();
 
-    await _socket?.close();
-    await _notifications?.close();
+    if (_socket != null) {
+      await _socket!.close();
+    }
+    await _notifications.close();
 
-    _queue?.cancel(error, trace);
+    _queue.cancel(error, trace);
   }
 
   void _readData(List<int> bytes) {
@@ -355,16 +358,15 @@ class _OidCache {
 
   Future<List<FieldDescription>> _resolveTableNames(
       _PostgreSQLExecutionContextMixin c,
-      List<FieldDescription> columns) async {
-    if (columns == null) return null;
+      List<FieldDescription>? columns) async {
+    if (columns == null) return [];
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
     final unresolvedTableOIDs = columns
         .map((f) => f.tableID)
         .toSet()
-        .where((oid) =>
-            oid != null && oid > 0 && !_tableOIDNameMap.containsKey(oid))
+        .where((oid) => oid > 0 && !_tableOIDNameMap.containsKey(oid))
         .toList()
           ..sort();
 
@@ -411,9 +413,9 @@ abstract class _PostgreSQLExecutionContextMixin
   @override
   Future<PostgreSQLResult> query(
     String fmtString, {
-    Map<String, dynamic> substitutionValues,
-    bool allowReuse,
-    int timeoutInSeconds,
+    Map<String, dynamic> substitutionValues = const {},
+    bool allowReuse = false,
+    int timeoutInSeconds = 0,
   }) =>
       _query(
         fmtString,
@@ -424,14 +426,12 @@ abstract class _PostgreSQLExecutionContextMixin
 
   Future<PostgreSQLResult> _query(
     String fmtString, {
-    Map<String, dynamic> substitutionValues,
-    bool allowReuse,
-    int timeoutInSeconds,
-    bool resolveOids,
+    Map<String, dynamic> substitutionValues = const {},
+    bool allowReuse = true,
+    int? timeoutInSeconds,
+    bool resolveOids = true,
   }) async {
-    allowReuse ??= true;
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
-    resolveOids ??= true;
 
     if (_connection.isClosed) {
       throw PostgreSQLException(
@@ -446,7 +446,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
     final queryResult =
         await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    var columnDescriptions = query.fieldDescriptions;
+    List<FieldDescription>? columnDescriptions = query.fieldDescriptions;
     if (resolveOids) {
       columnDescriptions = await _connection._oidCache
           ._resolveTableNames(this, columnDescriptions);
@@ -456,7 +456,7 @@ abstract class _PostgreSQLExecutionContextMixin
     return _PostgreSQLResult(
         queryResult.affectedRowCount,
         metaData,
-        queryResult.value
+        queryResult.value!
             .map((columns) => _PostgreSQLResultRow(metaData, columns))
             .toList());
   }
@@ -464,9 +464,9 @@ abstract class _PostgreSQLExecutionContextMixin
   @override
   Future<List<Map<String, Map<String, dynamic>>>> mappedResultsQuery(
       String fmtString,
-      {Map<String, dynamic> substitutionValues,
-      bool allowReuse,
-      int timeoutInSeconds}) async {
+      {Map<String, dynamic> substitutionValues = const {},
+      bool allowReuse = false,
+      int timeoutInSeconds = 0}) async {
     final rs = await query(
       fmtString,
       substitutionValues: substitutionValues,
@@ -478,7 +478,8 @@ abstract class _PostgreSQLExecutionContextMixin
 
   @override
   Future<int> execute(String fmtString,
-      {Map<String, dynamic> substitutionValues, int timeoutInSeconds}) async {
+      {Map<String, dynamic> substitutionValues = const {},
+      int? timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
@@ -521,18 +522,19 @@ abstract class _PostgreSQLExecutionContextMixin
     }
   }
 
-  Future _onQueryError(Query query, dynamic error, [StackTrace trace]) async {}
+  Future _onQueryError(Query query, dynamic error, [StackTrace? trace]) async {}
 }
 
 class _PostgreSQLResultMetaData {
   final List<ColumnDescription> columnDescriptions;
-  List<String> _tableNames;
+  late List<String> _tableNames;
 
-  _PostgreSQLResultMetaData(this.columnDescriptions);
+  _PostgreSQLResultMetaData(this.columnDescriptions) {
+    _tableNames =
+        columnDescriptions.map((column) => column.tableName).toSet().toList();
+  }
 
   List<String> get tableNames {
-    _tableNames ??=
-        columnDescriptions.map((column) => column.tableName).toSet().toList();
     return _tableNames;
   }
 }
@@ -570,7 +572,7 @@ class _PostgreSQLResultRow extends UnmodifiableListView
     });
     for (var i = 0; i < _metaData.columnDescriptions.length; i++) {
       final col = _metaData.columnDescriptions[i];
-      rowMap[col.tableName][col.columnName] = this[i];
+      rowMap[col.tableName]![col.columnName] = this[i];
     }
     return rowMap;
   }

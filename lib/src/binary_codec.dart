@@ -36,7 +36,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
   @override
   Uint8List convert(dynamic value) {
     if (value == null) {
-      return null;
+      return Uint8List.fromList([]);
     }
 
     switch (_dataType) {
@@ -199,9 +199,9 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
           }
           return outBuffer;
         }
+      default:
+        throw PostgreSQLException('Unsupported datatype');
     }
-
-    throw PostgreSQLException('Unsupported datatype');
   }
 }
 
@@ -214,7 +214,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
   dynamic convert(Uint8List value) {
     final dataType = typeMap[typeCode];
 
-    if (value == null) {
+    if (value.isEmpty) {
       return null;
     }
 
@@ -277,16 +277,18 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
 
           return buf.toString();
         }
-    }
-
-    // We'll try and decode this as a utf8 string and return that
-    // for many internal types, this is valid. If it fails,
-    // we just return the bytes and let the caller figure out what to
-    // do with it.
-    try {
-      return utf8.decode(value);
-    } catch (_) {
-      return value;
+      default:
+        {
+          // We'll try and decode this as a utf8 string and return that
+          // for many internal types, this is valid. If it fails,
+          // we just return the bytes and let the caller figure out what to
+          // do with it.
+          try {
+            return utf8.decode(value);
+          } catch (_) {
+            return value;
+          }
+        }
     }
   }
 

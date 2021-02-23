@@ -7,17 +7,17 @@ import 'package:postgres/postgres.dart';
 
 void main() {
   group('Transaction behavior', () {
-    PostgreSQLConnection conn;
+    late PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
-          username: 'dart', password: 'dart');
+      conn = PostgreSQLConnection('localhost', 'dart_test',
+          port: 5432, username: 'dart', password: 'dart');
       await conn.open();
       await conn.execute('CREATE TEMPORARY TABLE t (id INT UNIQUE)');
     });
 
     tearDown(() async {
-      await conn?.close();
+      await conn.close();
     });
 
     test('Rows are Lists of column values', () async {
@@ -295,17 +295,17 @@ void main() {
   // After a transaction fails, the changes must be rolled back, it should continue with pending queries, pending transactions, later queries, later transactions
 
   group('Transaction:Query recovery', () {
-    PostgreSQLConnection conn;
+    late PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
-          username: 'dart', password: 'dart');
+      conn = PostgreSQLConnection('localhost', 'dart_test',
+          port: 5432, username: 'dart', password: 'dart');
       await conn.open();
       await conn.execute('CREATE TEMPORARY TABLE t (id INT UNIQUE)');
     });
 
     tearDown(() async {
-      await conn?.close();
+      await conn.close();
     });
 
     test('Is rolled back/executes later query', () async {
@@ -396,17 +396,17 @@ void main() {
   });
 
   group('Transaction:Exception recovery', () {
-    PostgreSQLConnection conn;
+    late PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
-          username: 'dart', password: 'dart');
+      conn = PostgreSQLConnection('localhost', 'dart_test',
+          port: 5432, username: 'dart', password: 'dart');
       await conn.open();
       await conn.execute('CREATE TEMPORARY TABLE t (id INT UNIQUE)');
     });
 
     tearDown(() async {
-      await conn?.close();
+      await conn.close();
     });
 
     test('Is rolled back/executes later query', () async {
@@ -542,17 +542,17 @@ void main() {
   });
 
   group('Transaction:Rollback recovery', () {
-    PostgreSQLConnection conn;
+    late PostgreSQLConnection conn;
 
     setUp(() async {
-      conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
-          username: 'dart', password: 'dart');
+      conn = PostgreSQLConnection('localhost', 'dart_test',
+          port: 5432, username: 'dart', password: 'dart');
       await conn.open();
       await conn.execute('CREATE TEMPORARY TABLE t (id INT UNIQUE)');
     });
 
     tearDown(() async {
-      await conn?.close();
+      await conn.close();
     });
 
     test('Is rolled back/executes later query', () async {

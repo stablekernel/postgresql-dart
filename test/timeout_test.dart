@@ -5,17 +5,17 @@ import 'package:test/test.dart';
 import 'package:postgres/postgres.dart';
 
 void main() {
-  PostgreSQLConnection conn;
+  late PostgreSQLConnection conn;
 
   setUp(() async {
-    conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
-        username: 'dart', password: 'dart');
+    conn = PostgreSQLConnection('localhost', 'dart_test',
+        port: 5432, username: 'dart', password: 'dart');
     await conn.open();
     await conn.execute('CREATE TEMPORARY TABLE t (id INT UNIQUE)');
   });
 
   tearDown(() async {
-    await conn?.close();
+    await conn.close();
   });
 
   test(
