@@ -358,13 +358,14 @@ class _OidCache {
 
   Future<List<FieldDescription>> _resolveTableNames(
       _PostgreSQLExecutionContextMixin c,
-      List<FieldDescription>? columns) async {
+      List<FieldDescription?>? columns) async {
     if (columns == null) return [];
     //todo (joeconwaystk): If this was a cached query, resolving is table oids is unnecessary.
     // It's not a significant impact here, but an area for optimization. This includes
     // assigning resolvedTableName
     final unresolvedTableOIDs = columns
-        .map((f) => f.tableID)
+        .where((f) => f != null)
+        .map((f) => f!.tableID)
         .toSet()
         .where((oid) => oid > 0 && !_tableOIDNameMap.containsKey(oid))
         .toList()
@@ -375,7 +376,7 @@ class _OidCache {
     }
 
     return columns
-        .map((c) => c.change(tableName: _tableOIDNameMap[c.tableID]))
+        .map((c) => c!.change(tableName: _tableOIDNameMap[c.tableID]))
         .toList();
   }
 
@@ -446,12 +447,12 @@ abstract class _PostgreSQLExecutionContextMixin
 
     final queryResult =
         await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    List<FieldDescription>? columnDescriptions = query.fieldDescriptions;
+    List<FieldDescription?>? columnDescriptions = query.fieldDescriptions;
     if (resolveOids) {
       columnDescriptions = await _connection._oidCache
           ._resolveTableNames(this, columnDescriptions);
     }
-    final metaData = _PostgreSQLResultMetaData(columnDescriptions);
+    final metaData = _PostgreSQLResultMetaData(columnDescriptions!);
 
     return _PostgreSQLResult(
         queryResult.affectedRowCount,
@@ -526,12 +527,15 @@ abstract class _PostgreSQLExecutionContextMixin
 }
 
 class _PostgreSQLResultMetaData {
-  final List<ColumnDescription> columnDescriptions;
+  final List<ColumnDescription?> columnDescriptions;
   late List<String> _tableNames;
 
   _PostgreSQLResultMetaData(this.columnDescriptions) {
-    _tableNames =
-        columnDescriptions.map((column) => column.tableName).toSet().toList();
+    _tableNames = columnDescriptions
+        .where((column) => column != null)
+        .map((column) => column!.tableName)
+        .toSet()
+        .toList();
   }
 
   List<String> get tableNames {
@@ -550,7 +554,7 @@ class _PostgreSQLResult extends UnmodifiableListView<PostgreSQLResultRow>
       : super(rows);
 
   @override
-  List<ColumnDescription> get columnDescriptions =>
+  List<ColumnDescription?> get columnDescriptions =>
       _metaData.columnDescriptions;
 }
 
@@ -561,7 +565,7 @@ class _PostgreSQLResultRow extends UnmodifiableListView
   _PostgreSQLResultRow(this._metaData, List columns) : super(columns);
 
   @override
-  List<ColumnDescription> get columnDescriptions =>
+  List<ColumnDescription?> get columnDescriptions =>
       _metaData.columnDescriptions;
 
   @override
@@ -572,7 +576,7 @@ class _PostgreSQLResultRow extends UnmodifiableListView
     });
     for (var i = 0; i < _metaData.columnDescriptions.length; i++) {
       final col = _metaData.columnDescriptions[i];
-      rowMap[col.tableName]![col.columnName] = this[i];
+      rowMap[col!.tableName]![col.columnName] = this[i];
     }
     return rowMap;
   }
@@ -582,7 +586,7 @@ class _PostgreSQLResultRow extends UnmodifiableListView
     final rowMap = <String, dynamic>{};
     for (var i = 0; i < _metaData.columnDescriptions.length; i++) {
       final col = _metaData.columnDescriptions[i];
-      rowMap[col.columnName] = this[i];
+      rowMap[col!.columnName] = this[i];
     }
     return rowMap;
   }

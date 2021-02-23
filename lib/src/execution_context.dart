@@ -100,7 +100,7 @@ abstract class ColumnDescription {
 ///
 /// Column values can be accessed through the `[]` operator.
 abstract class PostgreSQLResultRow implements List {
-  List<ColumnDescription> get columnDescriptions;
+  List<ColumnDescription?> get columnDescriptions;
 
   /// Returns a two-level map that on the first level contains the resolved
   /// table name, and on the second level the column name (or its alias).
@@ -117,5 +117,5 @@ abstract class PostgreSQLResultRow implements List {
 abstract class PostgreSQLResult implements List<PostgreSQLResultRow> {
   /// How many rows did this query affect?
   int get affectedRowCount;
-  List<ColumnDescription> get columnDescriptions;
+  List<ColumnDescription?> get columnDescriptions;
 }

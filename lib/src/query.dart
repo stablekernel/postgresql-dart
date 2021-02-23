@@ -39,11 +39,11 @@ class Query<T> {
   CachedQuery? cache;
 
   final _onComplete = Completer<QueryResult<T>>.sync();
-  late List<FieldDescription> _fieldDescriptions;
+  List<FieldDescription>? _fieldDescriptions;
 
-  List<FieldDescription> get fieldDescriptions => _fieldDescriptions;
+  List<FieldDescription>? get fieldDescriptions => _fieldDescriptions;
 
-  set fieldDescriptions(List<FieldDescription> fds) {
+  set fieldDescriptions(List<FieldDescription>? fds) {
     _fieldDescriptions = fds;
     cache?.fieldDescriptions = fds;
   }
@@ -135,11 +135,11 @@ class Query<T> {
   }
 
   void addRow(List<Uint8List> rawRowData) {
-    if (onlyReturnAffectedRowCount) {
+    if (onlyReturnAffectedRowCount || fieldDescriptions == null) {
       return;
     }
 
-    final iterator = fieldDescriptions.iterator;
+    final iterator = fieldDescriptions!.iterator;
     final lazyDecodedData = rawRowData.map((bd) {
       iterator.moveNext();
       return iterator.current.converter.convert(bd);

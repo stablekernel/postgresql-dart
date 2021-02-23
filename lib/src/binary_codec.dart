@@ -169,7 +169,7 @@ class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
                 'Invalid type for parameter value. Expected: String Got: ${value.runtimeType}');
           }
 
-          final hexBytes = (value as String)
+          final hexBytes = value
               .toLowerCase()
               .codeUnits
               .where((c) => c != _dashUnit)
