@@ -31,7 +31,7 @@ void main() {
   });
 
   tearDown(() async {
-    await connection?.close();
+    await connection.close();
   });
 
   test('Get row map without specifying columns', () async {

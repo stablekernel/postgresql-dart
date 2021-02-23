@@ -34,7 +34,7 @@ void main() {
         'VALUES (null, null, null, null, null, null, null, null, null, null, null, null, null)');
   });
   tearDown(() async {
-    await connection?.close();
+    await connection.close();
   });
 
   test('Fetch em', () async {
