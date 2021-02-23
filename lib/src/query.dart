@@ -161,7 +161,7 @@ class Query<T> {
     _onComplete.complete(QueryResult(rowsAffected, rows as T));
   }
 
-  void completeError(Object error, [StackTrace? stackTrace]) {
+  void completeError(Object error, [StackTrace stackTrace = StackTrace.empty]) {
     if (_onComplete.isCompleted) {
       return;
     }

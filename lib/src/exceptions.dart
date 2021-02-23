@@ -35,11 +35,13 @@ enum PostgreSQLSeverity {
 /// Exception thrown by [PostgreSQLConnection] instances.
 class PostgreSQLException implements Exception {
   PostgreSQLException(this.message,
-      {this.severity = PostgreSQLSeverity.error, this.stackTrace}) {
+      {this.severity = PostgreSQLSeverity.error,
+      this.stackTrace = StackTrace.empty}) {
     code = '';
   }
 
-  PostgreSQLException._(List<ErrorField> errorFields, {this.stackTrace}) {
+  PostgreSQLException._(List<ErrorField> errorFields,
+      {this.stackTrace = StackTrace.empty}) {
     final finder = (int identifer) => (errorFields.firstWhere(
         (ErrorField e) => e.identificationToken == identifer,
         orElse: () => ErrorField(null, null)));
@@ -106,7 +108,7 @@ class PostgreSQLException implements Exception {
   String? routineName;
 
   /// A [StackTrace] if available.
-  StackTrace? stackTrace;
+  StackTrace stackTrace;
 
   @override
   String toString() {
