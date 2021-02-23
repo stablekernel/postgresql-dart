@@ -20,7 +20,7 @@ class QueryQueue extends ListBase<Query<dynamic>>
     return _inner.first;
   }
 
-  void cancel([Object? error, StackTrace stackTrace = StackTrace.empty]) {
+  void cancel([Object? error, StackTrace? stackTrace]) {
     _isCancelled = true;
     error ??= _cancellationException;
     final existing = _inner;

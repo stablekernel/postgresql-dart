@@ -446,11 +446,13 @@ void main() {
 
   group('Network error situations', () {
     late ServerSocket serverSocket;
-    late Socket socket;
+    Socket? socket;
 
     tearDown(() async {
       await serverSocket.close();
-      await socket.close();
+      if (socket != null) {
+        await socket!.close();
+      }
     });
 
     test(

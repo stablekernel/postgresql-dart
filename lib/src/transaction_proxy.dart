@@ -70,8 +70,7 @@ class _TransactionProxy extends Object
     }
   }
 
-  Future _cancelAndRollback(dynamic object,
-      [StackTrace trace = StackTrace.empty]) async {
+  Future _cancelAndRollback(dynamic object, [StackTrace? trace]) async {
     if (_hasRolledBack) {
       return;
     }
@@ -107,8 +106,7 @@ class _TransactionProxy extends Object
     }
   }
 
-  Future _transactionFailed(dynamic error,
-      [StackTrace trace = StackTrace.empty]) async {
+  Future _transactionFailed(dynamic error, [StackTrace? trace]) async {
     if (_hasFailed) {
       return;
     }
@@ -119,8 +117,7 @@ class _TransactionProxy extends Object
   }
 
   @override
-  Future _onQueryError(Query query, dynamic error,
-      [StackTrace trace = StackTrace.empty]) {
+  Future _onQueryError(Query query, dynamic error, [StackTrace? trace]) {
     return _transactionFailed(error, trace);
   }
 }

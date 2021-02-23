@@ -250,7 +250,7 @@ class PostgreSQLConnection extends Object
     _connectionState.connection = this;
   }
 
-  Future _close([dynamic error, StackTrace trace = StackTrace.empty]) async {
+  Future _close([dynamic error, StackTrace? trace]) async {
     _connectionState = _PostgreSQLConnectionStateClosed();
 
     if (_socket != null) {
@@ -523,8 +523,7 @@ abstract class _PostgreSQLExecutionContextMixin
     }
   }
 
-  Future _onQueryError(Query query, dynamic error,
-      [StackTrace trace = StackTrace.empty]) async {}
+  Future _onQueryError(Query query, dynamic error, [StackTrace? trace]) async {}
 }
 
 class _PostgreSQLResultMetaData {
