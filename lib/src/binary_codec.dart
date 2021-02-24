@@ -215,7 +215,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     final dataType = typeMap[typeCode];
 
     if (value.isEmpty) {
-      return null;
+      return '';
     }
 
     final buffer =
