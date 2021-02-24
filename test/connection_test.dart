@@ -344,7 +344,6 @@ void main() {
       await conn.execute('CREATE TEMPORARY TABLE t (i int unique)');
 
       await conn.execute('INSERT INTO t (i) VALUES (1)');
-      //ignore: unawaited_futures
       conn.execute('INSERT INTO t (i) VALUES (1)').catchError((err) {
         // ignore
       });
@@ -389,7 +388,6 @@ void main() {
       final orderEnsurer = [];
 
       // this will emit a query error
-      //ignore: unawaited_futures
       conn.execute('INSERT INTO t (i) VALUES (1)').catchError((err) {
         orderEnsurer.add(1);
         // ignore
