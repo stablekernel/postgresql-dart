@@ -28,15 +28,15 @@ final _hex = <String>[
   'f',
 ];
 
-class PostgresBinaryEncoder extends Converter<dynamic, Uint8List> {
+class PostgresBinaryEncoder extends Converter<dynamic, Uint8List?> {
   final PostgreSQLDataType _dataType;
 
   const PostgresBinaryEncoder(this._dataType);
 
   @override
-  Uint8List convert(dynamic value) {
+  Uint8List? convert(dynamic value) {
     if (value == null) {
-      return Uint8List.fromList([]);
+      return null;
     }
 
     switch (_dataType) {
@@ -215,7 +215,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
     final dataType = typeMap[typeCode];
 
     if (value.isEmpty) {
-      return '';
+      return null;
     }
 
     final buffer =
