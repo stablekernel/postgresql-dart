@@ -38,7 +38,7 @@ class Query<T> {
 
   CachedQuery? cache;
 
-  final _onComplete = Completer<QueryResult<T>>.sync();
+  final _onComplete = Completer<QueryResult<T>?>.sync();
   List<FieldDescription>? _fieldDescriptions;
 
   List<FieldDescription>? get fieldDescriptions => _fieldDescriptions;
