@@ -211,12 +211,12 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
   final int typeCode;
 
   @override
-  dynamic convert(Uint8List value) {
-    final dataType = typeMap[typeCode];
-
-    if (value.isEmpty) {
+  dynamic convert(Uint8List? value) {
+    if (value == null || value.isEmpty) {
       return null;
     }
+
+    final dataType = typeMap[typeCode];
 
     final buffer =
         ByteData.view(value.buffer, value.offsetInBytes, value.lengthInBytes);
