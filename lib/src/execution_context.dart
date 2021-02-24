@@ -93,7 +93,7 @@ abstract class ColumnDescription {
   String get columnName;
 
   /// The resolved name of the referenced table.
-  String get tableName;
+  String? get tableName;
 }
 
 /// A single row of a query result.
@@ -104,7 +104,7 @@ abstract class PostgreSQLResultRow implements List {
 
   /// Returns a two-level map that on the first level contains the resolved
   /// table name, and on the second level the column name (or its alias).
-  Map<String, Map<String, dynamic>> toTableColumnMap();
+  Map<String?, Map<String, dynamic>> toTableColumnMap();
 
   /// Returns a single-level map that maps the column name (or its alias) to the
   /// value returned on that position.

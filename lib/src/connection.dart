@@ -538,7 +538,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
 class _PostgreSQLResultMetaData {
   final List<ColumnDescription?> columnDescriptions;
-  late List<String> _tableNames;
+  late List<String?> _tableNames;
 
   _PostgreSQLResultMetaData(this.columnDescriptions) {
     _tableNames = columnDescriptions
@@ -548,7 +548,7 @@ class _PostgreSQLResultMetaData {
         .toList();
   }
 
-  List<String> get tableNames {
+  List<String?> get tableNames {
     return _tableNames;
   }
 }
@@ -579,8 +579,8 @@ class _PostgreSQLResultRow extends UnmodifiableListView
       _metaData.columnDescriptions;
 
   @override
-  Map<String, Map<String, dynamic>> toTableColumnMap() {
-    final rowMap = <String, Map<String, dynamic>>{};
+  Map<String?, Map<String, dynamic>> toTableColumnMap() {
+    final rowMap = <String?, Map<String, dynamic>>{};
     _metaData.tableNames.forEach((tableName) {
       rowMap[tableName] = <String, dynamic>{};
     });
