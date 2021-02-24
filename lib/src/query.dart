@@ -26,7 +26,7 @@ class Query<T> {
 
   String? statementIdentifier;
 
-  Future<QueryResult<T>> get future => _onComplete.future;
+  Future<QueryResult<T>?> get future => _onComplete.future;
 
   final String statement;
   final Map<String, dynamic> substitutionValues;

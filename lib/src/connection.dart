@@ -458,12 +458,14 @@ abstract class _PostgreSQLExecutionContextMixin
     }
     final metaData = _PostgreSQLResultMetaData(columnDescriptions!);
 
-    return _PostgreSQLResult(
-        queryResult.affectedRowCount,
-        metaData,
-        queryResult.value!
-            .map((columns) => _PostgreSQLResultRow(metaData, columns))
-            .toList());
+    return queryResult != null
+        ? _PostgreSQLResult(
+            queryResult.affectedRowCount,
+            metaData,
+            queryResult.value!
+                .map((columns) => _PostgreSQLResultRow(metaData, columns))
+                .toList())
+        : null;
   }
 
   @override
@@ -500,13 +502,13 @@ abstract class _PostgreSQLExecutionContextMixin
         onlyReturnAffectedRowCount: true);
 
     final result = await _enqueue(query, timeoutInSeconds: timeoutInSeconds);
-    return result.affectedRowCount;
+    return result != null ? result.affectedRowCount : null;
   }
 
   @override
   void cancelTransaction({String reason});
 
-  Future<QueryResult<T>> _enqueue<T>(Query<T> query,
+  Future<QueryResult<T>?> _enqueue<T>(Query<T> query,
       {int timeoutInSeconds = 30}) async {
     if (_queue.add(query)) {
       _connection._transitionToState(_connection._connectionState.awake());
