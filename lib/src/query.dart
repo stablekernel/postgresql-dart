@@ -209,8 +209,8 @@ class ParameterValue {
       dynamic value, PostgreSQLDataType postgresType) {
     final converter = PostgresBinaryEncoder(postgresType);
     final bytes = converter.convert(value);
-    final length = bytes?.length;
-    return ParameterValue._(true, bytes, length ?? 0);
+    final length = bytes?.length ?? 0;
+    return ParameterValue._(true, bytes, length);
   }
 
   factory ParameterValue.text(dynamic value) {
