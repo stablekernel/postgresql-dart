@@ -212,7 +212,7 @@ class PostgresBinaryDecoder extends Converter<Uint8List, dynamic> {
 
   @override
   dynamic convert(Uint8List? value) {
-    if (value == null || value.isEmpty) {
+    if (value == null) {
       return null;
     }
 

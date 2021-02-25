@@ -134,7 +134,7 @@ class Query<T> {
     return null;
   }
 
-  void addRow(List<Uint8List> rawRowData) {
+  void addRow(List<Uint8List?> rawRowData) {
     if (onlyReturnAffectedRowCount || fieldDescriptions == null) {
       return;
     }

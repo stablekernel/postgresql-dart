@@ -541,11 +541,8 @@ class _PostgreSQLResultMetaData {
   late List<String?> _tableNames;
 
   _PostgreSQLResultMetaData(this.columnDescriptions) {
-    _tableNames = columnDescriptions
-        .where((column) => column != null)
-        .map((column) => column!.tableName)
-        .toSet()
-        .toList();
+    _tableNames =
+        columnDescriptions.map((column) => column!.tableName).toSet().toList();
   }
 
   List<String?> get tableNames {

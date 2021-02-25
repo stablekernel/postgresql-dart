@@ -115,7 +115,7 @@ class RowDescriptionMessage extends ServerMessage {
 }
 
 class DataRowMessage extends ServerMessage {
-  final values = <Uint8List>[];
+  final values = <Uint8List?>[];
 
   DataRowMessage(Uint8List bytes) {
     final reader = ByteDataReader()..add(bytes);
@@ -127,7 +127,7 @@ class DataRowMessage extends ServerMessage {
       if (dataSize == 0) {
         values.add(Uint8List(0));
       } else if (dataSize == -1) {
-        values.add(Uint8List.fromList([]));
+        values.add(null);
       } else {
         final rawBytes = reader.read(dataSize);
         values.add(rawBytes);
