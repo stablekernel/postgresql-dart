@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.0
+
+- Migrate to null safety
+
 ## 2.2.0
 
 - Supporting Unix socket connections. (Thanks to [grillbiff](https://github.com/grillbiff),
