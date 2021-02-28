@@ -40,8 +40,8 @@ class PostgreSQLConnection extends Object
   /// [useSSL] when true, uses a secure socket when connecting to a PostgreSQL database.
   PostgreSQLConnection(
     this.host,
+    this.port,
     this.databaseName, {
-    this.port = 5432,
     this.username,
     this.password,
     this.timeoutInSeconds = 30,
@@ -215,7 +215,7 @@ class PostgreSQLConnection extends Object
   /// default query timeout will be used.
   Future transaction(
     Future Function(PostgreSQLExecutionContext connection) queryBlock, {
-    int commitTimeoutInSeconds = 30,
+    int? commitTimeoutInSeconds,
   }) async {
     if (isClosed) {
       throw PostgreSQLException(
@@ -418,7 +418,7 @@ abstract class _PostgreSQLExecutionContextMixin
   @override
   Future<PostgreSQLResult?> query(
     String fmtString, {
-    Map<String, dynamic> substitutionValues = const {},
+    Map<String, dynamic>? substitutionValues,
     bool allowReuse = true,
     int timeoutInSeconds = 30,
   }) =>
@@ -431,7 +431,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
   Future<PostgreSQLResult?> _query(
     String fmtString, {
-    Map<String, dynamic> substitutionValues = const {},
+    Map<String, dynamic>? substitutionValues,
     required bool allowReuse,
     int? timeoutInSeconds,
     bool resolveOids = true,
@@ -489,8 +489,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
   @override
   Future<int?> execute(String fmtString,
-      {Map<String, dynamic> substitutionValues = const {},
-      int? timeoutInSeconds}) async {
+      {Map<String, dynamic>? substitutionValues, int? timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(

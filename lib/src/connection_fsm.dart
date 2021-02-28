@@ -255,12 +255,13 @@ class _PostgreSQLConnectionStateBusy extends _PostgreSQLConnectionState {
     // print("(${query.statement}) -> $message");
 
     if (message is ReadyForQueryMessage) {
+      if (message.state == ReadyForQueryMessage.StateTransactionError) {
+        query.completeError(returningException!);
+        return _PostgreSQLConnectionStateReadyInTransaction(
+            query.transaction as _TransactionProxy);
+      }
+
       if (returningException != null) {
-        if (message.state == ReadyForQueryMessage.StateTransactionError) {
-          query.completeError(returningException!);
-          return _PostgreSQLConnectionStateReadyInTransaction(
-              query.transaction as _TransactionProxy);
-        }
         query.completeError(returningException!);
       } else {
         query.complete(rowsAffected);

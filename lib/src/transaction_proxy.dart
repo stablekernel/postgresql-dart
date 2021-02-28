@@ -30,7 +30,7 @@ class _TransactionProxy extends Object
   PostgreSQLExecutionContext get _transaction => this;
 
   final _TransactionQuerySignature executionBlock;
-  final int commitTimeoutInSeconds;
+  final int? commitTimeoutInSeconds;
   bool _hasFailed = false;
   bool _hasRolledBack = false;
 

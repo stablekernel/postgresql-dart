@@ -29,7 +29,7 @@ class Query<T> {
   Future<QueryResult<T>?> get future => _onComplete.future;
 
   final String statement;
-  final Map<String, dynamic> substitutionValues;
+  final Map<String, dynamic>? substitutionValues;
   final PostgreSQLExecutionContext transaction;
   final PostgreSQLConnection connection;
 
@@ -96,7 +96,7 @@ class Query<T> {
   }
 
   void sendCachedQuery(Socket socket, CachedQuery cacheQuery,
-      Map<String, dynamic> substitutionValues) {
+      Map<String, dynamic>? substitutionValues) {
     final statementName = cacheQuery.preparedStatementName;
     final parameterList = cacheQuery.orderedParameters!
         .map((identifier) => ParameterValue(identifier, substitutionValues))
@@ -196,13 +196,13 @@ class CachedQuery {
 
 class ParameterValue {
   factory ParameterValue(PostgreSQLFormatIdentifier identifier,
-      Map<String, dynamic> substitutionValues) {
+      Map<String, dynamic>? substitutionValues) {
     if (identifier.type == null) {
-      return ParameterValue.text(substitutionValues[identifier.name]);
+      return ParameterValue.text(substitutionValues?[identifier.name]);
     }
 
     return ParameterValue.binary(
-        substitutionValues[identifier.name], identifier.type!);
+        substitutionValues?[identifier.name], identifier.type!);
   }
 
   factory ParameterValue.binary(
