@@ -420,7 +420,7 @@ abstract class _PostgreSQLExecutionContextMixin
     String fmtString, {
     Map<String, dynamic>? substitutionValues,
     bool allowReuse = true,
-    int timeoutInSeconds = 30,
+    int? timeoutInSeconds,
   }) =>
       _query(
         fmtString,
@@ -473,7 +473,7 @@ abstract class _PostgreSQLExecutionContextMixin
       String fmtString,
       {Map<String, dynamic> substitutionValues = const {},
       bool allowReuse = false,
-      int timeoutInSeconds = 30}) async {
+      int? timeoutInSeconds}) async {
     final rs = await query(
       fmtString,
       substitutionValues: substitutionValues,
