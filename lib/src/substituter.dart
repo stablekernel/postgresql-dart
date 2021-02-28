@@ -52,10 +52,10 @@ class PostgreSQLFormat {
     }
   }
 
-  static String substitute(String fmtString, Map<String, dynamic>? values,
+  static String substitute(String fmtString, Map<String, dynamic> values,
       {SQLReplaceIdentifierFunction? replace}) {
     final converter = PostgresTextEncoder();
-    replace ??= (spec, index) => converter.convert(values?[spec.name]);
+    replace ??= (spec, index) => converter.convert(values[spec.name]);
 
     final items = <PostgreSQLFormatToken>[];
     PostgreSQLFormatToken? currentPtr;
@@ -114,7 +114,7 @@ class PostgreSQLFormat {
       } else {
         final identifier = PostgreSQLFormatIdentifier(t.buffer.toString());
 
-        if (values != null && !values.containsKey(identifier.name)) {
+        if (!values.containsKey(identifier.name)) {
           // Format string specified identifier with name ${identifier.name},
           // but key was not present in values.
           return t.buffer;

@@ -215,7 +215,7 @@ class PostgreSQLConnection extends Object
   /// default query timeout will be used.
   Future transaction(
     Future Function(PostgreSQLExecutionContext connection) queryBlock, {
-    int? commitTimeoutInSeconds,
+    int commitTimeoutInSeconds = 30,
   }) async {
     if (isClosed) {
       throw PostgreSQLException(
@@ -418,7 +418,7 @@ abstract class _PostgreSQLExecutionContextMixin
   @override
   Future<PostgreSQLResult?> query(
     String fmtString, {
-    Map<String, dynamic>? substitutionValues,
+    Map<String, dynamic> substitutionValues = const {},
     bool allowReuse = true,
     int timeoutInSeconds = 30,
   }) =>
@@ -431,7 +431,7 @@ abstract class _PostgreSQLExecutionContextMixin
 
   Future<PostgreSQLResult?> _query(
     String fmtString, {
-    Map<String, dynamic>? substitutionValues,
+    Map<String, dynamic> substitutionValues = const {},
     required bool allowReuse,
     int? timeoutInSeconds,
     bool resolveOids = true,
@@ -489,7 +489,8 @@ abstract class _PostgreSQLExecutionContextMixin
 
   @override
   Future<int?> execute(String fmtString,
-      {Map<String, dynamic>? substitutionValues, int? timeoutInSeconds}) async {
+      {Map<String, dynamic> substitutionValues = const {},
+      int? timeoutInSeconds}) async {
     timeoutInSeconds ??= _connection.queryTimeoutInSeconds;
     if (_connection.isClosed) {
       throw PostgreSQLException(
