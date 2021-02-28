@@ -14,8 +14,8 @@ void main() {
     late PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
       await connection.execute(
           'CREATE TEMPORARY TABLE t (i int, s serial, bi bigint, bs bigserial, bl boolean, si smallint, t text, f real, d double precision, dt date, ts timestamp, tsz timestamptz)');
@@ -284,8 +284,8 @@ void main() {
     late PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
       await connection.execute(
           'CREATE TEMPORARY TABLE t (i1 int not null, i2 int not null)');
@@ -440,12 +440,11 @@ void main() {
   });
 
   group('Failure cases', () {
-    var connection = PostgreSQLConnection('localhost', 'dart_test',
-        port: 5432, username: 'dart', password: 'dart');
+    late PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
       await connection.execute(
           'CREATE TEMPORARY TABLE t (i int, s serial, bi bigint, bs bigserial, bl boolean, si smallint, t text, f real, d double precision, dt date, ts timestamp, tsz timestamptz)');

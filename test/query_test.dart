@@ -4,12 +4,11 @@ import 'package:postgres/src/types.dart';
 
 void main() {
   group('Successful queries', () {
-    var connection = PostgreSQLConnection('localhost', 'dart_test',
-        port: 5432, username: 'dart', password: 'dart');
+    late PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
       await connection.execute('CREATE TEMPORARY TABLE t '
           '(i int, s serial, bi bigint, '
@@ -332,12 +331,11 @@ void main() {
   });
 
   group('Unsuccesful queries', () {
-    var connection = PostgreSQLConnection('localhost', 'dart_test',
-        port: 5432, username: 'dart', password: 'dart');
+    late PostgreSQLConnection connection;
 
     setUp(() async {
-      connection = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      connection = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await connection.open();
       await connection.execute(
           'CREATE TEMPORARY TABLE t (i1 int not null, i2 int not null)');

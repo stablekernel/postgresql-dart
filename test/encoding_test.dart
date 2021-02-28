@@ -14,8 +14,8 @@ late PostgreSQLConnection conn;
 void main() {
   group('Binary encoders', () {
     setUp(() async {
-      conn = PostgreSQLConnection('localhost', 'dart_test',
-          port: 5432, username: 'dart', password: 'dart');
+      conn = PostgreSQLConnection('localhost', 5432, 'dart_test',
+          username: 'dart', password: 'dart');
       await conn.open();
     });
 
