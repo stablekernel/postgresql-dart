@@ -32,7 +32,7 @@ abstract class PostgreSQLExecutionContext {
   Future<PostgreSQLResult?> query(String fmtString,
       {Map<String, dynamic> substitutionValues,
       bool allowReuse,
-      int timeoutInSeconds});
+      int? timeoutInSeconds});
 
   /// Executes a query on this context.
   ///
