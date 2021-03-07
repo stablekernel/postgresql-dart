@@ -42,7 +42,7 @@ abstract class PostgreSQLExecutionContext {
   /// for executing queries in the PostgreSQL protocol; [query] is preferred for queries that will be executed more than once, will contain user input,
   /// or return rows.
   Future<int?> execute(String fmtString,
-      {Map<String, dynamic> substitutionValues, int timeoutInSeconds});
+      {Map<String, dynamic> substitutionValues, int? timeoutInSeconds});
 
   /// Cancels a transaction on this context.
   ///
