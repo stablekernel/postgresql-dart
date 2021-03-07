@@ -13,7 +13,7 @@ class PostgreSQLFormat {
     return '@$name';
   }
 
-  static String? dataTypeStringForDataType(PostgreSQLDataType dt) {
+  static String? dataTypeStringForDataType(PostgreSQLDataType? dt) {
     switch (dt) {
       case PostgreSQLDataType.text:
         return 'text';
